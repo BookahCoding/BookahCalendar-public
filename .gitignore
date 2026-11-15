@@ -1,0 +1,13 @@
+.gradle/
+build/
+local.properties
+keystore.properties
+*.p12
+*.jks
+.idea/
+*.apk
+__pycache__/
+.venv/
+spike/out/
+spike/data/
+design-reference/

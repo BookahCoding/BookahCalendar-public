@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BookahCalendar</string>
+    <string name="sign_in_title">Σύνδεση στο Nextcloud</string>
+    <string name="sign_in_hint">Χρησιμοποίησε ξεχωριστό κωδικό εφαρμογής για αυτό το τηλέφωνο (Nextcloud: Ρυθμίσεις, Ασφάλεια). Μπορείς να τον ανακαλέσεις εκεί όποτε θέλεις.</string>
+    <string name="field_server">Διεύθυνση διακομιστή</string>
+    <string name="field_user">Όνομα χρήστη</string>
+    <string name="field_password">Κωδικός εφαρμογής</string>
+    <string name="action_sign_in">Σύνδεση</string>
+    <string name="action_sign_out">Αποσύνδεση</string>
+    <string name="action_refresh">Ανανέωση</string>
+    <string name="status_syncing">Συγχρονισμός…</string>
+    <string name="status_offline">Χωρίς σύνδεση. Εμφανίζονται τα δεδομένα που είναι αποθηκευμένα στο τηλέφωνο.</string>
+    <string name="status_synced">Ενημερωμένο</string>
+    <string name="quiet_day">Μια ήσυχη μέρα.</string>
+    <string name="today">Σήμερα</string>
+    <string name="all_day">Ολοήμερο</string>
+    <string name="view_schedule">Πρόγραμμα</string>
+    <string name="view_month">Μήνας</string>
+    <string name="view_soon">σύντομα</string>
+    <string name="view_day">Ημέρα</string>
+    <string name="view_3days">3 ημέρες</string>
+    <string name="view_week">Εβδομάδα</string>
+    <string name="drawer_calendars">Ημερολόγια</string>
+    <string name="source_nextcloud">Nextcloud</string>
+    <string name="source_google">Google (μόνο ανάγνωση)</string>
+    <string name="settings">Ρυθμίσεις</string>
+    <string name="settings_general">Γενικά</string>
+    <string name="week_start">Αρχή της εβδομάδας</string>
+    <string name="day_monday">Δευτέρα</string>
+    <string name="day_sunday">Κυριακή</string>
+    <string name="day_saturday">Σάββατο</string>
+    <string name="appearance">Εμφάνιση</string>
+    <string name="appearance_light">Φωτεινή</string>
+    <string name="appearance_dark">Σκοτεινή</string>
+    <string name="appearance_system">Σύστημα</string>
+    <string name="theme">Θέμα</string>
+    <string name="settings_feeds">Ημερολόγια μόνο για ανάγνωση</string>
+    <string name="settings_feeds_hint">Μια μυστική διεύθυνση iCal, για παράδειγμα από το Google Calendar. Τα γεγονότα εμφανίζονται, αλλά δεν αλλάζουν ποτέ.</string>
+    <string name="feed_name">Όνομα</string>
+    <string name="feed_address">Μυστική διεύθυνση iCal</string>
+    <string name="feed_add">Προσθήκη</string>
+    <string name="feed_remove">Αφαίρεση</string>
+    <string name="feed_stored">Η διεύθυνση αποθηκεύεται κρυπτογραφημένη σε αυτό το τηλέφωνο.</string>
+    <string name="hidden_duplicates">%1$d γεγονότα κρύφτηκαν επειδή το Nextcloud τα έχει ήδη.</string>
+    <string name="settings_account">Λογαριασμός</string>
+    <string name="updates">Ενημερώσεις</string>
+    <string name="updates_off">Αυτή η έκδοση δεν ψάχνει για ενημερώσεις. Οι ενημερώσεις ελέγχονται μόνο στις επίσημες εκδόσεις.</string>
+    <string name="updates_on">Ψάχνει για νεότερη έκδοση στο GitHub.</string>
+    <string name="about">Σχετικά</string>
+    <string name="about_version">Έκδοση %1$s</string>
+    <string name="about_credits">Δημιουργία: BookahCoding. Τα χρώματα των θεμάτων προέρχονται από τα design tokens των Hikyaku και Herald (άδεια MIT, Copyright (c) 2026 Giton22). Τα αρχεία ημερολογίου διαβάζονται με το biweekly (BSD-2-Clause) και το δίκτυο με το OkHttp (Apache-2.0). Τα έργα τέχνης είναι πρωτότυπα διανυσματικά σχέδια· δεν χρησιμοποιείται εικόνα από μουσείο. Η εφαρμογή επικοινωνεί μόνο με τον διακομιστή Nextcloud σου και με τις διευθύνσεις που προσθέτεις και, αν ορίσεις μέρος για τον καιρό, με το Open-Meteo (open-meteo.com, δεδομένα με άδεια CC BY 4.0), το οποίο λαμβάνει μόνο τις συντεταγμένες αυτού του μέρους. Δεν έχει αναλυτικά στοιχεία και δεν στέλνει αναφορές σφαλμάτων.</string>
+    <string name="speed">Ταχύτητα</string>
+    <string name="speed_start">Από το άνοιγμα της οθόνης μέχρι τα γεγονότα: %1$s ms</string>
+    <string name="speed_expand">Τελευταία ανάπτυξη γεγονότων: %1$s ms</string>
+    <string name="speed_sync">Τελευταίος συγχρονισμός με τον διακομιστή: %1$s ms</string>
+    <string name="licences">Άδειες ανοιχτού λογισμικού</string>
+    <string name="crash_log">Αρχείο σφαλμάτων</string>
+    <string name="crash_none">Δεν έχουν καταγραφεί σφάλματα.</string>
+    <string name="crash_clear">Καθαρισμός</string>
+    <string name="lock_description">Μόνο ανάγνωση</string>
+    <string name="menu">Μενού</string>
+    <string name="back">Πίσω</string>
+    <string name="close">Κλείσιμο</string>
+    <string name="read_only">Μόνο ανάγνωση</string>
+    <string name="more_events">+%1$d</string>
+    <string name="no_events_day">Τίποτα προγραμματισμένο αυτή τη μέρα.</string>
+    <string name="no_title">(χωρίς τίτλο)</string>
+    <string name="no_calendars">Δεν υπάρχουν ημερολόγια ακόμα. Τράβηξε προς τα κάτω για ανανέωση όταν είσαι στο δίκτυο.</string>
+
+    <string name="err_address_https">Γράψε τη διεύθυνση ως https://… (η εφαρμογή μιλά μόνο HTTPS).</string>
+    <string name="err_need_both">Χρειάζονται και το όνομα χρήστη και ο κωδικός εφαρμογής.</string>
+    <string name="err_unreachable">Δεν βρέθηκε ο διακομιστής. Έλεγξε τη διεύθυνση και ότι το τηλέφωνο είναι στο δίκτυο.</string>
+    <string name="err_not_accepted">Ο διακομιστής δεν δέχτηκε αυτά τα στοιχεία.</string>
+    <string name="feed_err_address">Η διεύθυνση πρέπει να ξεκινά με https:// (ή webcal://) και να μην έχει κενά.</string>
+    <string name="feed_added">Προστέθηκε. Βρέθηκαν %1$d γεγονότα.</string>
+    <string name="feed_err_offline">Δεν βρέθηκε αυτή η διεύθυνση. Έλεγξε τη σύνδεση και δοκίμασε ξανά.</string>
+    <string name="feed_err_rejected">Ο διακομιστής απέρριψε τη διεύθυνση (ίσως είναι λάθος ή εκτός λειτουργίας).</string>
+    <string name="feed_err_invalid">Αυτή η διεύθυνση δεν επέστρεψε ημερολόγιο.</string>
+    <string name="feed_default_name">Ημερολόγιο μόνο για ανάγνωση</string>
+
+    <string name="when_all_day">%1$s, ολοήμερο</string>
+    <string name="repeat_daily">Επαναλαμβάνεται καθημερινά</string>
+    <string name="repeat_weekly">Επαναλαμβάνεται εβδομαδιαία</string>
+    <string name="repeat_monthly">Επαναλαμβάνεται μηνιαία</string>
+    <string name="repeat_yearly">Επαναλαμβάνεται ετήσια</string>
+    <string name="repeat_plain">Επαναλαμβάνεται</string>
+    <string name="repeat_every_days">Επαναλαμβάνεται κάθε %1$d ημέρες</string>
+    <string name="repeat_every_weeks">Επαναλαμβάνεται κάθε %1$d εβδομάδες</string>
+    <string name="repeat_every_months">Επαναλαμβάνεται κάθε %1$d μήνες</string>
+    <string name="repeat_every_years">Επαναλαμβάνεται κάθε %1$d χρόνια</string>
+    <string name="repeat_on">%1$s: %2$s</string>
+    <string name="repeat_count">%1$s, %2$d φορές</string>
+    <string name="repeat_until">%1$s, έως %2$s</string>
+    <string name="repeat_ordinal_day">%2$s (%1$s)</string>
+    <string name="ord_first">πρώτη</string>
+    <string name="ord_second">δεύτερη</string>
+    <string name="ord_third">τρίτη</string>
+    <string name="ord_fourth">τέταρτη</string>
+    <string name="ord_last">τελευταία</string>
+    <string name="reminder_at_time">Τη στιγμή του γεγονότος</string>
+    <string name="reminder_hours_minutes">%1$d ώ %2$d λ πριν</string>
+    <plurals name="reminder_minutes">
+        <item quantity="one">%d λεπτό πριν</item>
+        <item quantity="other">%d λεπτά πριν</item>
+    </plurals>
+    <plurals name="reminder_hours">
+        <item quantity="one">%d ώρα πριν</item>
+        <item quantity="other">%d ώρες πριν</item>
+    </plurals>
+    <plurals name="reminder_days">
+        <item quantity="one">%d ημέρα πριν</item>
+        <item quantity="other">%d ημέρες πριν</item>
+    </plurals>
+    <plurals name="reminder_weeks">
+        <item quantity="one">%d εβδομάδα πριν</item>
+        <item quantity="other">%d εβδομάδες πριν</item>
+    </plurals>
+
+    <string name="fab_add">Νέο γεγονός</string>
+    <string name="form_new_title">Νέο γεγονός</string>
+    <string name="form_edit_title">Επεξεργασία γεγονότος</string>
+    <string name="form_save">Αποθήκευση</string>
+    <string name="form_title_hint">Τίτλος</string>
+    <string name="form_all_day">Ολοήμερο</string>
+    <string name="form_start">Έναρξη</string>
+    <string name="form_end">Λήξη</string>
+    <string name="form_place">Τοποθεσία</string>
+    <string name="form_notes">Σημειώσεις</string>
+    <string name="form_calendar">Ημερολόγιο</string>
+    <string name="form_reminders">Υπενθυμίσεις</string>
+    <string name="form_add_reminder">Προσθήκη υπενθύμισης</string>
+    <string name="form_reminder_note">Οι υπενθυμίσεις χτυπούν σε αυτό το τηλέφωνο πριν από το γεγονός, ακόμα και με κλειστή εφαρμογή.</string>
+    <string name="form_end_before_start">Η λήξη είναι πριν από την έναρξη.</string>
+    <string name="form_no_calendar">Κανένα ημερολόγιο δεν μπορεί να αλλάξει αυτή τη στιγμή.</string>
+    <string name="form_discard_title">Να απορριφθούν οι αλλαγές;</string>
+    <string name="form_discard">Απόρριψη</string>
+    <string name="form_keep_editing">Συνέχεια επεξεργασίας</string>
+    <string name="event_edit">Επεξεργασία</string>
+    <string name="event_delete">Διαγραφή</string>
+    <string name="event_cancel">Ακύρωση</string>
+    <string name="event_ok">Εντάξει</string>
+    <string name="delete_title">Διαγραφή αυτού του γεγονότος;</string>
+    <string name="delete_body">Αφαιρείται από το ημερολόγιό σου στο Nextcloud.</string>
+    <string name="readonly_repeating">Αυτό το επαναλαμβανόμενο γεγονός δεν αλλάζει από εδώ.</string>
+    <string name="reminders">Υπενθυμίσεις</string>
+    <string name="reminders_channel">Υπενθυμίσεις</string>
+    <string name="reminders_on">Οι ειδοποιήσεις επιτρέπονται: οι υπενθυμίσεις μπορούν να χτυπήσουν.</string>
+    <string name="reminders_off">Οι ειδοποιήσεις είναι κλειστές: οι υπενθυμίσεις δεν μπορούν να χτυπήσουν.</string>
+    <string name="reminders_note">Οι υπενθυμίσεις που είναι αποθηκευμένες στα γεγονότα σου χτυπούν για τις επόμενες 14 ημέρες, ακόμα και με κλειστή εφαρμογή, και ξανά μετά από επανεκκίνηση του τηλεφώνου. Μερικά τηλέφωνα περιορίζουν τις εφαρμογές στο παρασκήνιο: αν μια υπενθύμιση αργεί, επίτρεψε στο BookahCalendar να τρέχει στο παρασκήνιο από τις ρυθμίσεις μπαταρίας.</string>
+    <string name="reminders_allow">Να επιτρέπονται οι ειδοποιήσεις</string>
+    <string name="reminders_test">Αποστολή δοκιμαστικής υπενθύμισης</string>
+    <string name="reminders_test_title">Δοκιμαστική υπενθύμιση</string>
+    <string name="reminders_snooze">Αναβολή 10 λεπτά</string>
+    <string name="scope_this">Αυτό το γεγονός</string>
+    <string name="scope_following">Αυτό και τα επόμενα γεγονότα</string>
+    <string name="scope_all">Όλα τα γεγονότα</string>
+    <string name="scope_edit_title">Ποια γεγονότα να αλλάξουν;</string>
+    <string name="scope_delete_title">Ποια γεγονότα να διαγραφούν;</string>
+    <string name="people_delete_title">Διαγραφή γεγονότος με άλλους ανθρώπους;</string>
+    <string name="people_delete_body">Στο γεγονός συμμετέχουν και άλλοι άνθρωποι. Το Nextcloud μπορεί να τους στείλει μήνυμα ότι αφαιρέθηκε. Μπορείς να το διαγράψεις από εδώ, αλλά όχι να το επεξεργαστείς. Να διαγραφεί παρ\' όλα αυτά;</string>
+    <string name="people_note">Τα γεγονότα με άλλους ανθρώπους δεν επεξεργάζονται από εδώ, μόνο διαγράφονται.</string>
+    <string name="readonly_invitation">Τα γεγονότα με άλλους ανθρώπους δεν αλλάζουν από εδώ.</string>
+    <string name="conflict_title">Το γεγονός άλλαξε αλλού</string>
+    <string name="weather">Καιρός</string>
+    <string name="weather_hint">Δείχνει την πρόγνωση πάνω από κάθε επόμενη μέρα. Γράψε ένα μέρος μία φορά. Μόνο οι συντεταγμένες του στέλνονται στο Open-Meteo (open-meteo.com)· τίποτα για σένα ή τα ημερολόγιά σου. Χωρίς μέρος, η εφαρμογή δεν επικοινωνεί ποτέ με υπηρεσία καιρού.</string>
+    <string name="weather_place">Μέρος (για παράδειγμα μια πόλη)</string>
+    <string name="weather_search">Αναζήτηση</string>
+    <string name="weather_none_found">Δεν βρέθηκε μέρος. Δοκίμασε άλλη γραφή.</string>
+    <string name="weather_unreachable">Δεν βρέθηκε η υπηρεσία καιρού. Έλεγξε τη σύνδεση και δοκίμασε ξανά.</string>
+    <string name="conflict_save_body">Άλλαξε αφού το άνοιξες. Μπορείς να προσθέσεις τις αλλαγές σου πάνω στην άλλη έκδοση ή να κρατήσεις την άλλη έκδοση και να χάσεις τις δικές σου.</string>
+    <string name="conflict_keep_mine">Προσθήκη των αλλαγών μου</string>
+    <string name="conflict_use_theirs">Χρήση της άλλης έκδοσης</string>
+    <string name="conflict_delete_body">Άλλαξε αφού το άνοιξες. Να διαγραφεί παρ\' όλα αυτά ή να μείνει;</string>
+    <string name="conflict_delete_anyway">Διαγραφή παρ\' όλα αυτά</string>
+    <string name="conflict_keep_it">Να μείνει</string>
+    <string name="write_gone">Αυτό το γεγονός δεν υπάρχει πια: διαγράφηκε αλλού.</string>
+    <string name="write_refused">Αυτή η αλλαγή δεν επιτρέπεται.</string>
+    <string name="write_offline">Δεν βρέθηκε ο διακομιστής. Δεν αποθηκεύτηκε τίποτα. Έλεγξε ότι είσαι στο δίκτυο και δοκίμασε ξανά.</string>
+    <string name="write_failed">Ο διακομιστής δεν δέχτηκε την αλλαγή. Δεν αποθηκεύτηκε τίποτα.</string>
+
+    <!-- spoken descriptions (screen reader) -->
+    <string name="month_tile_empty">%1$s, κανένα γεγονός</string>
+    <plurals name="month_tile_events">
+        <item quantity="one">%1$s, %2$d γεγονός</item>
+        <item quantity="other">%1$s, %2$d γεγονότα</item>
+    </plurals>
+    <string name="repeat_less">Μείωση</string>
+    <string name="repeat_more">Αύξηση</string>
+
+    <!-- theme descriptions -->
+    <string name="theme_desc_washi_ink">ζεστό χαρτί, μελάνι σούμι και νύχτα λουλακί</string>
+    <string name="theme_desc_great_wave">μπλε της Πρωσίας, ανοιχτός ουρανός και κρεμ αφρός</string>
+    <string name="theme_desc_red_fuji">σκουριασμένη κορυφή, κρεμ ομίχλη και βαθύς μπλε ουρανός</string>
+    <string name="theme_desc_pine_mist">πράσινο βρύου, γκρι ομίχλη και χαρτί</string>
+    <string name="theme_desc_chrysanthemum">χρυσά άνθη, πράσινο φύλλων και ανοιχτό χαρτί</string>
+    <string name="theme_desc_peony">ροζ παιώνιες, βαθιά φύλλα και απαλό ροζ χαρτί</string>
+    <string name="theme_desc_kirifuri">λευκός αφρός, βαθύ τιρκουάζ καταρράκτη και βρύο</string>
+    <string name="theme_desc_thunderstorm">καθαρός ουρανός, λουλακί καταιγίδας και αστραπή</string>
+    <string name="theme_desc_irises">βιολετί ίριδας, λεβάντα χαρτί και μελάνι μελιτζανί</string>
+    <string name="theme_desc_shibuya_night">φωτεινές πινακίδες ματζέντα, κυανό φως και βιολετί νύχτα</string>
+    <string name="theme_desc_akihabara">πράσινο νέον, βιολετί πινακίδες και μαυρομπλέ δρόμοι</string>
+
+    <string name="sync_err_auth">Ο διακομιστής δεν δέχτηκε το όνομα χρήστη ή τον κωδικό εφαρμογής. Συνδέσου ξανά από τις Ρυθμίσεις.</string>
+    <string name="sync_err_gone">Ο διακομιστής δεν το επιτρέπει ή δεν βρήκε το ημερολόγιο.</string>
+    <string name="sync_err_other">Ο τελευταίος συγχρονισμός δεν πέτυχε. Εμφανίζονται όσα είναι αποθηκευμένα στο τηλέφωνο.</string>
+
+    <!-- search -->
+    <string name="search">Αναζήτηση</string>
+    <string name="search_hint">Αναζήτηση γεγονότων</string>
+    <string name="search_clear">Καθαρισμός</string>
+    <string name="search_prompt">Γράψε μια λέξη από τίτλο, τόπο ή σημείωση. Πρώτα τα επόμενα γεγονότα.</string>
+    <string name="search_none">Δεν βρέθηκαν γεγονότα στους μήνες που είναι αποθηκευμένοι στο τηλέφωνο.</string>
+
+    <!-- repeat editor (new events) -->
+    <string name="repeat_title">Επανάληψη</string>
+    <string name="repeat_none">Δεν επαναλαμβάνεται</string>
+    <string name="repeat_f_daily">Καθημερινά</string>
+    <string name="repeat_f_weekly">Εβδομαδιαία</string>
+    <string name="repeat_f_monthly">Μηνιαία</string>
+    <string name="repeat_f_yearly">Ετήσια</string>
+    <string name="repeat_every">Κάθε</string>
+    <string name="repeat_ends">Τέλος</string>
+    <string name="repeat_end_never">Ποτέ</string>
+    <string name="repeat_end_date">Σε ημερομηνία</string>
+    <string name="repeat_end_count">Μετά από αριθμό φορών</string>
+    <string name="repeat_end_before_start">Η επανάληψη τελειώνει πριν αρχίσει το γεγονός.</string>
+    <string name="repeat_first_moved">Το πρώτο γεγονός θα είναι %1$s.</string>
+    <string name="repeat_month_note">Οι μήνες χωρίς ημέρα %1$d παραλείπονται.</string>
+    <plurals name="unit_days">
+        <item quantity="one">ημέρα</item>
+        <item quantity="other">ημέρες</item>
+    </plurals>
+    <plurals name="unit_weeks">
+        <item quantity="one">εβδομάδα</item>
+        <item quantity="other">εβδομάδες</item>
+    </plurals>
+    <plurals name="unit_months">
+        <item quantity="one">μήνα</item>
+        <item quantity="other">μήνες</item>
+    </plurals>
+    <plurals name="unit_years">
+        <item quantity="one">χρόνο</item>
+        <item quantity="other">χρόνια</item>
+    </plurals>
+    <plurals name="unit_times">
+        <item quantity="one">φορά</item>
+        <item quantity="other">φορές</item>
+    </plurals>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug builds only: fills the cache with generated events so screens and speed can be tested without any real data. -->
+        <receiver android:name=".debug.SeedReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="dev.bookah.calendar.SEED" />
+                <action android:name="dev.bookah.calendar.TOUCH" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

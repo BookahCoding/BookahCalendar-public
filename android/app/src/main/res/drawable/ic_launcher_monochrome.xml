@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed (monochrome) icon: the page outline, the sun and the wave as one colour. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#000000" android:fillType="evenOdd"
+        android:pathData="M38,30 h32 a4,4 0 0 1 4,4 v40 a4,4 0 0 1 -4,4 h-32 a4,4 0 0 1 -4,-4 v-40 a4,4 0 0 1 4,-4 z M38,39 h32 v-5 h-32 z" />
+    <path android:fillColor="#000000"
+        android:pathData="M48,50 a6,6 0 1 0 12,0 a6,6 0 1 0 -12,0 z" />
+    <path android:fillColor="#000000"
+        android:pathData="M34,68 C40,60 46,60 50,64 C52,56 60,52 66,56 C64,57 63,59 64,61 C68,60 72,62 74,66 V74 a4,4 0 0 1 -4,4 H38 a4,4 0 0 1 -4,-4 z" />
+</vector>

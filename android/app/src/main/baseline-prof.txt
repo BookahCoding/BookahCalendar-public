@@ -1,0 +1,4 @@
+# Baseline profile: the app's own classes are compiled ahead of time on install, so the first screen opens without
+# warming up the code on the phone. Wildcards keep this valid after every change (docs/phase-5-notes.md).
+HSPLdev/bookah/calendar/**->**(**)**
+Ldev/bookah/calendar/**;

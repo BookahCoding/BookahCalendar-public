@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BookahCalendar</string>
+    <string name="sign_in_title">Sign in to Nextcloud</string>
+    <string name="sign_in_hint">Use a separate app password made for this phone (Nextcloud: Settings, Security). You can revoke it there at any time.</string>
+    <string name="field_server">Server address</string>
+    <string name="field_user">User name</string>
+    <string name="field_password">App password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_sign_out">Sign out</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="status_syncing">Syncing…</string>
+    <string name="status_offline">Offline. Showing what is saved on this phone.</string>
+    <string name="status_synced">Up to date</string>
+    <string name="quiet_day">A quiet day.</string>
+    <string name="today">Today</string>
+    <string name="all_day">All day</string>
+    <string name="view_schedule">Schedule</string>
+    <string name="view_month">Month</string>
+    <string name="view_soon">soon</string>
+    <string name="view_day">Day</string>
+    <string name="view_3days">3 days</string>
+    <string name="view_week">Week</string>
+    <string name="drawer_calendars">Calendars</string>
+    <string name="source_nextcloud">Nextcloud</string>
+    <string name="source_google">Google (read-only)</string>
+    <string name="settings">Settings</string>
+    <string name="settings_general">General</string>
+    <string name="week_start">Start of the week</string>
+    <string name="day_monday">Monday</string>
+    <string name="day_sunday">Sunday</string>
+    <string name="day_saturday">Saturday</string>
+    <string name="appearance">Appearance</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_system">System</string>
+    <string name="theme">Theme</string>
+    <string name="settings_feeds">Read-only calendar feeds</string>
+    <string name="settings_feeds_hint">A secret iCal address, for example from Google Calendar. Events from a feed can be shown but never changed.</string>
+    <string name="feed_name">Name</string>
+    <string name="feed_address">Secret iCal address</string>
+    <string name="feed_add">Add feed</string>
+    <string name="feed_remove">Remove</string>
+    <string name="feed_stored">Address stored encrypted on this phone.</string>
+    <string name="hidden_duplicates">%1$d events from feeds are hidden because Nextcloud already has them.</string>
+    <string name="settings_account">Account</string>
+    <string name="updates">Updates</string>
+    <string name="updates_off">This build does not look for updates. Updates are checked only in released builds.</string>
+    <string name="updates_on">Looks for a newer version on GitHub.</string>
+    <string name="about">About</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_credits">Made by BookahCoding. Theme colours come from the Hikyaku and Herald design tokens (MIT licence, Copyright (c) 2026 Giton22). Calendar files are read with biweekly (BSD-2-Clause) and the network with OkHttp (Apache-2.0). The artwork is original vector drawing; no museum image is used. This app contacts only your Nextcloud server and the feed addresses you add, and, if you set a place for the weather, Open-Meteo (open-meteo.com, data under CC BY 4.0), which receives only the coordinates of that place. It has no analytics and uploads no crash reports.</string>
+    <string name="speed">Speed</string>
+    <string name="speed_start">Screen opened to events ready: %1$s ms</string>
+    <string name="speed_expand">Last expansion of events: %1$s ms</string>
+    <string name="speed_sync">Last sync with the server: %1$s ms</string>
+    <string name="licences">Open-source licences</string>
+    <string name="crash_log">Crash log</string>
+    <string name="crash_none">No crashes recorded.</string>
+    <string name="crash_clear">Clear</string>
+    <string name="lock_description">Read-only</string>
+    <string name="menu">Menu</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="read_only">Read-only</string>
+    <string name="more_events">+%1$d</string>
+    <string name="no_events_day">Nothing planned on this day.</string>
+    <string name="no_title">(no title)</string>
+    <string name="no_calendars">No calendars yet. Pull to refresh once you are on the network.</string>
+
+    <!-- messages from the view model -->
+    <string name="err_address_https">Enter the address as https://… (the app only talks HTTPS).</string>
+    <string name="err_need_both">User name and app password are both needed.</string>
+    <string name="err_unreachable">Could not reach the server. Check the address and that this phone is on the network.</string>
+    <string name="err_not_accepted">The server did not accept these details.</string>
+    <string name="feed_err_address">The address must start with https:// (or webcal://) and have no spaces.</string>
+    <string name="feed_added">Added. %1$d events found.</string>
+    <string name="feed_err_offline">Could not reach that address. Check the connection and try again.</string>
+    <string name="feed_err_rejected">The server refused that address (it may be wrong or switched off).</string>
+    <string name="feed_err_invalid">That address did not return a calendar.</string>
+    <string name="feed_default_name">Read-only feed</string>
+
+    <!-- event sheet: dates and repeats -->
+    <string name="when_all_day">%1$s, all day</string>
+    <string name="repeat_daily">Repeats daily</string>
+    <string name="repeat_weekly">Repeats weekly</string>
+    <string name="repeat_monthly">Repeats monthly</string>
+    <string name="repeat_yearly">Repeats yearly</string>
+    <string name="repeat_plain">Repeats</string>
+    <string name="repeat_every_days">Repeats every %1$d days</string>
+    <string name="repeat_every_weeks">Repeats every %1$d weeks</string>
+    <string name="repeat_every_months">Repeats every %1$d months</string>
+    <string name="repeat_every_years">Repeats every %1$d years</string>
+    <string name="repeat_on">%1$s on %2$s</string>
+    <string name="repeat_count">%1$s, %2$d times</string>
+    <string name="repeat_until">%1$s, until %2$s</string>
+    <string name="repeat_ordinal_day">the %1$s %2$s</string>
+    <string name="ord_first">first</string>
+    <string name="ord_second">second</string>
+    <string name="ord_third">third</string>
+    <string name="ord_fourth">fourth</string>
+    <string name="ord_last">last</string>
+    <string name="reminder_at_time">At the time of the event</string>
+    <string name="reminder_hours_minutes">%1$d h %2$d min before</string>
+    <plurals name="reminder_minutes">
+        <item quantity="one">%d minute before</item>
+        <item quantity="other">%d minutes before</item>
+    </plurals>
+    <plurals name="reminder_hours">
+        <item quantity="one">%d hour before</item>
+        <item quantity="other">%d hours before</item>
+    </plurals>
+    <plurals name="reminder_days">
+        <item quantity="one">%d day before</item>
+        <item quantity="other">%d days before</item>
+    </plurals>
+    <plurals name="reminder_weeks">
+        <item quantity="one">%d week before</item>
+        <item quantity="other">%d weeks before</item>
+    </plurals>
+
+    <!-- creating, changing, deleting events -->
+    <string name="fab_add">New event</string>
+    <string name="form_new_title">New event</string>
+    <string name="form_edit_title">Edit event</string>
+    <string name="form_save">Save</string>
+    <string name="form_title_hint">Title</string>
+    <string name="form_all_day">All day</string>
+    <string name="form_start">Start</string>
+    <string name="form_end">End</string>
+    <string name="form_place">Place</string>
+    <string name="form_notes">Notes</string>
+    <string name="form_calendar">Calendar</string>
+    <string name="form_reminders">Reminders</string>
+    <string name="form_add_reminder">Add reminder</string>
+    <string name="form_reminder_note">Reminders ring on this phone before the event, also when the app is closed.</string>
+    <string name="form_end_before_start">The end is before the start.</string>
+    <string name="form_no_calendar">No calendar can be changed right now.</string>
+    <string name="form_discard_title">Discard your changes?</string>
+    <string name="form_discard">Discard</string>
+    <string name="form_keep_editing">Keep editing</string>
+    <string name="event_edit">Edit</string>
+    <string name="event_delete">Delete</string>
+    <string name="event_cancel">Cancel</string>
+    <string name="event_ok">OK</string>
+    <string name="delete_title">Delete this event?</string>
+    <string name="delete_body">It is removed from your Nextcloud calendar.</string>
+    <string name="readonly_repeating">This repeating event cannot be changed here.</string>
+    <string name="reminders">Reminders</string>
+    <string name="reminders_channel">Reminders</string>
+    <string name="reminders_on">Notifications are allowed: reminders can ring.</string>
+    <string name="reminders_off">Notifications are off: reminders cannot ring.</string>
+    <string name="reminders_note">Reminders saved in your events ring for the next 14 days, also when the app is closed, and again after the phone restarts. Some phones limit background apps: if a reminder is late, allow BookahCalendar to run in the background in the phone\'s battery settings.</string>
+    <string name="reminders_allow">Allow notifications</string>
+    <string name="reminders_test">Send a test reminder</string>
+    <string name="reminders_test_title">Test reminder</string>
+    <string name="reminders_snooze">Snooze 10 min</string>
+    <string name="scope_this">This event</string>
+    <string name="scope_following">This and following events</string>
+    <string name="scope_all">All events</string>
+    <string name="scope_edit_title">Change which events?</string>
+    <string name="scope_delete_title">Delete which events?</string>
+    <string name="people_delete_title">Delete an event with other people?</string>
+    <string name="people_delete_body">Other people are part of this event. Nextcloud may send them a message that it was removed. You can delete it here, but you cannot edit it. Delete anyway?</string>
+    <string name="people_note">Events with other people cannot be edited here, only deleted.</string>
+    <string name="readonly_invitation">Events with other people cannot be changed here.</string>
+    <string name="weather">Weather</string>
+    <string name="weather_hint">Shows the forecast above each coming day. Type a place once. Only that place\'s coordinates are sent to Open-Meteo (open-meteo.com); nothing about you or your calendars. Without a place, the app never contacts a weather service.</string>
+    <string name="weather_place">Place (for example a city)</string>
+    <string name="weather_search">Search</string>
+    <string name="weather_none_found">No place found. Try another spelling.</string>
+    <string name="weather_unreachable">Could not reach the weather service. Check the connection and try again.</string>
+    <string name="conflict_title">This event was changed elsewhere</string>
+    <string name="conflict_save_body">It changed after you opened it. You can add your changes on top of the other version, or keep the other version and drop yours.</string>
+    <string name="conflict_keep_mine">Add my changes</string>
+    <string name="conflict_use_theirs">Use the other version</string>
+    <string name="conflict_delete_body">It changed after you opened it. Delete it anyway, or keep it?</string>
+    <string name="conflict_delete_anyway">Delete anyway</string>
+    <string name="conflict_keep_it">Keep it</string>
+    <string name="write_gone">This event no longer exists: it was deleted elsewhere.</string>
+    <string name="write_refused">This change is not allowed.</string>
+    <string name="write_offline">Could not reach the server. Nothing was saved. Check that you are on the network and try again.</string>
+    <string name="write_failed">The server did not accept the change. Nothing was saved.</string>
+
+    <!-- spoken descriptions (screen reader) -->
+    <string name="month_tile_empty">%1$s, no events</string>
+    <plurals name="month_tile_events">
+        <item quantity="one">%1$s, %2$d event</item>
+        <item quantity="other">%1$s, %2$d events</item>
+    </plurals>
+    <string name="repeat_less">Fewer</string>
+    <string name="repeat_more">More</string>
+
+    <!-- theme descriptions -->
+    <string name="theme_desc_washi_ink">warm paper, sumi ink and indigo night</string>
+    <string name="theme_desc_great_wave">Prussian blue, pale sky and cream foam</string>
+    <string name="theme_desc_red_fuji">rust peak, cream mist and deep blue sky</string>
+    <string name="theme_desc_pine_mist">moss green, slate mist and paper</string>
+    <string name="theme_desc_chrysanthemum">golden blooms, leaf green and pale paper</string>
+    <string name="theme_desc_peony">rose peonies, deep leaves and blush paper</string>
+    <string name="theme_desc_kirifuri">foam white, deep waterfall teal and moss</string>
+    <string name="theme_desc_thunderstorm">clear sky, storm indigo and lightning</string>
+    <string name="theme_desc_irises">iris violet, lavender paper and aubergine ink</string>
+    <string name="theme_desc_shibuya_night">magenta signs, cyan light and violet night</string>
+    <string name="theme_desc_akihabara">green neon, violet signs and black-blue streets</string>
+
+    <string name="sync_err_auth">The server did not accept the user name or app password. Sign in again in Settings.</string>
+    <string name="sync_err_gone">The server does not allow this or could not find the calendar.</string>
+    <string name="sync_err_other">The last sync did not work. What is saved on this phone is still shown.</string>
+
+    <!-- search -->
+    <string name="search">Search</string>
+    <string name="search_hint">Search events</string>
+    <string name="search_clear">Clear</string>
+    <string name="search_prompt">Type a word from a title, place or note. Coming events come first.</string>
+    <string name="search_none">No events found in the months saved on this phone.</string>
+
+    <!-- repeat editor (new events) -->
+    <string name="repeat_title">Repeat</string>
+    <string name="repeat_none">Does not repeat</string>
+    <string name="repeat_f_daily">Daily</string>
+    <string name="repeat_f_weekly">Weekly</string>
+    <string name="repeat_f_monthly">Monthly</string>
+    <string name="repeat_f_yearly">Yearly</string>
+    <string name="repeat_every">Every</string>
+    <string name="repeat_ends">Ends</string>
+    <string name="repeat_end_never">Never</string>
+    <string name="repeat_end_date">On a date</string>
+    <string name="repeat_end_count">After a number of times</string>
+    <string name="repeat_end_before_start">The repeat ends before the event starts.</string>
+    <string name="repeat_first_moved">The first event is then on %1$s.</string>
+    <string name="repeat_month_note">Months without a day %1$d are skipped.</string>
+    <plurals name="unit_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="unit_weeks">
+        <item quantity="one">week</item>
+        <item quantity="other">weeks</item>
+    </plurals>
+    <plurals name="unit_months">
+        <item quantity="one">month</item>
+        <item quantity="other">months</item>
+    </plurals>
+    <plurals name="unit_years">
+        <item quantity="one">year</item>
+        <item quantity="other">years</item>
+    </plurals>
+    <plurals name="unit_times">
+        <item quantity="one">time</item>
+        <item quantity="other">times</item>
+    </plurals>
+</resources>
