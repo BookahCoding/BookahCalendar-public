@@ -68,6 +68,9 @@ data class UiState(
     val settingsOpen: Boolean = false,
     /** The search page is open. */
     val searchOpen: Boolean = false,
+    /** "Check for updates" is running / its last answer (null = not asked yet). */
+    val updateBusy: Boolean = false,
+    val updateResult: dev.bookah.calendar.data.UpdateResult? = null,
     /** The configured read-only feeds. Only id and name: the address stays encrypted in the vault and never reaches the screens. */
     val feeds: List<FeedInfo> = emptyList(),
     val feedBusy: Boolean = false,
@@ -263,6 +266,17 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
     fun setCalendarVisible(calendarId: Long, visible: Boolean) {
         graph.store.setVisible(calendarId, visible)
         viewModelScope.launch { reload() }
+    }
+
+    /** Asks GitHub (the releases repository this build was made with) whether a newer version exists. Only on the button; does nothing in builds without one. */
+    fun checkUpdates() {
+        val repo = BuildConfig.RELEASES_REPO
+        if (repo.isBlank() || _state.value.updateBusy) return
+        _state.update { it.copy(updateBusy = true, updateResult = null) }
+        viewModelScope.launch {
+            val r = dev.bookah.calendar.data.UpdateChecker(graph.http).check(repo, BuildConfig.VERSION_NAME)
+            _state.update { it.copy(updateBusy = false, updateResult = r) }
+        }
     }
 
     fun openSearch(open: Boolean) = _state.update { it.copy(searchOpen = open) }

@@ -69,6 +69,7 @@ fun SettingsScreen(
     onSearchWeatherPlace: (String) -> Unit,
     onChooseWeatherPlace: (dev.bookah.calendar.data.Place) -> Unit,
     onRemoveWeatherPlace: () -> Unit,
+    onCheckUpdates: () -> Unit = {},
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
@@ -196,6 +197,24 @@ fun SettingsScreen(
                 if (BuildConfig.RELEASES_REPO.isBlank()) stringResource(R.string.updates_off) else stringResource(R.string.updates_on),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (BuildConfig.RELEASES_REPO.isNotBlank()) {
+                OutlinedButton(onCheckUpdates, enabled = !state.updateBusy) {
+                    Text(stringResource(if (state.updateBusy) R.string.updates_checking else R.string.updates_check))
+                }
+                when (val u = state.updateResult) {
+                    is dev.bookah.calendar.data.UpdateResult.UpToDate -> Text(stringResource(R.string.updates_latest, u.version), style = MaterialTheme.typography.bodyMedium)
+                    is dev.bookah.calendar.data.UpdateResult.Available -> {
+                        Text(stringResource(R.string.updates_available, u.version), style = MaterialTheme.typography.bodyMedium)
+                        val ctx = LocalContext.current
+                        Button({ runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(u.pageUrl))) } }) {
+                            Text(stringResource(R.string.updates_open))
+                        }
+                    }
+                    dev.bookah.calendar.data.UpdateResult.Unreachable -> Text(stringResource(R.string.updates_unreachable), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                    dev.bookah.calendar.data.UpdateResult.Failed -> Text(stringResource(R.string.updates_failed), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                    null -> {}
+                }
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
             Section(R.string.speed)

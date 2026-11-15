@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                             val openDay = state.openDay
                             when {
                                 state.searchOpen -> SearchScreen(state, onBack = { model.openSearch(false) }, onOpenEvent = model::openEvent)
-                                state.settingsOpen -> SettingsScreen(state, onBack = { model.openSettings(false) }, onAddFeed = model::addFeed, onRemoveFeed = model::removeFeed, onSignOut = model::signOut, onTheme = model::setTheme, onAppearance = model::setAppearance, onWeekStart = model::setWeekStart, onSearchWeatherPlace = model::searchWeatherPlace, onChooseWeatherPlace = model::chooseWeatherPlace, onRemoveWeatherPlace = model::removeWeatherPlace)
+                                state.settingsOpen -> SettingsScreen(state, onBack = { model.openSettings(false) }, onAddFeed = model::addFeed, onRemoveFeed = model::removeFeed, onSignOut = model::signOut, onTheme = model::setTheme, onAppearance = model::setAppearance, onWeekStart = model::setWeekStart, onSearchWeatherPlace = model::searchWeatherPlace, onChooseWeatherPlace = model::chooseWeatherPlace, onRemoveWeatherPlace = model::removeWeatherPlace, onCheckUpdates = model::checkUpdates)
                                 openDay != null -> DayListScreen(openDay, state, onBack = { model.openDay(null) }, onOpenEvent = model::openEvent)
                                 state.view == ViewMode.Month -> MonthScreen(state, onMenu = { scope.launch { drawer.open() } }, onOpenDay = model::openDay)
                                 state.view == ViewMode.Day || state.view == ViewMode.ThreeDays || state.view == ViewMode.Week -> androidx.compose.runtime.key(state.view) {

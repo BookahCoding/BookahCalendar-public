@@ -90,3 +90,9 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 }
+
+// The real-data tests read the folder named by BOOKAH_PRIVATE_DIR (outside Git). Making it part of the test task, so a cached "skipped" result
+// is never reused once it is set.
+tasks.configureEach {
+    if (name.startsWith("test") && name.endsWith("UnitTest")) inputs.property("privateDir", providers.environmentVariable("BOOKAH_PRIVATE_DIR").orElse(""))
+}
