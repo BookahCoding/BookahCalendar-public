@@ -212,6 +212,22 @@
     <string name="sync_err_gone">Ο διακομιστής δεν το επιτρέπει ή δεν βρήκε το ημερολόγιο.</string>
     <string name="sync_err_other">Ο τελευταίος συγχρονισμός δεν πέτυχε. Εμφανίζονται όσα είναι αποθηκευμένα στο τηλέφωνο.</string>
 
+    <!-- event colour -->
+    <string name="color_title">Χρώμα</string>
+    <string name="color_calendar">Όπως το ημερολόγιο</string>
+    <string name="color_tomato">Ντομάτα</string>
+    <string name="color_salmon">Σολομός</string>
+    <string name="color_orange">Πορτοκαλί</string>
+    <string name="color_gold">Χρυσό</string>
+    <string name="color_lightgreen">Ανοιχτό πράσινο</string>
+    <string name="color_green">Πράσινο</string>
+    <string name="color_turquoise">Τιρκουάζ</string>
+    <string name="color_blue">Μπλε</string>
+    <string name="color_lilac">Λιλά</string>
+    <string name="color_purple">Μωβ</string>
+    <string name="color_pink">Ροζ</string>
+    <string name="color_gray">Γκρι</string>
+
     <!-- search -->
     <string name="search">Αναζήτηση</string>
     <string name="search_hint">Αναζήτηση γεγονότων</string>

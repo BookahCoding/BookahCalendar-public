@@ -4,6 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -154,6 +157,9 @@ private fun GridPage(
     scroll: androidx.compose.foundation.ScrollState, onOpenEvent: (Instance) -> Unit, onNewAt: (LocalDate, Int) -> Unit,
 ) {
     val t = LocalThemeColors.current
+    // a long press on an empty spot starts a one-hour box under the finger; moving the finger moves it (day and time); letting go opens the new event form there
+    var ghost by remember { mutableStateOf<Pair<Int, Int>?>(null) }          // column index, start minute
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     Column(Modifier.fillMaxSize()) {
         // header: weekday over date number, today in a filled pill
         Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
@@ -180,7 +186,7 @@ private fun GridPage(
                 for (list in strips) {
                     Column(Modifier.weight(1f).padding(horizontal = 1.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)) {
                         for (e in list.take(3)) {
-                            val chip = ChipColor.forCalendar(ChipColor.parse(colors[e.calendarId]?.colorHex ?: "#00679E"))
+                            val chip = eventChipColor(e, colors[e.calendarId])
                             Text(
                                 e.title.ifBlank { stringResource(R.string.no_title) },
                                 Modifier.fillMaxWidth().height(20.dp).clip(RoundedCornerShape(4.dp)).background(chip.fill).clickable { onOpenEvent(e) }.padding(horizontal = 3.dp),
@@ -194,7 +200,25 @@ private fun GridPage(
         }
         // the 24 hours
         Box(Modifier.weight(1f).verticalScroll(scroll)) {
-            Row(Modifier.fillMaxWidth().height((hourDp * 24).dp)) {
+            Row(
+                Modifier.fillMaxWidth().height((hourDp * 24).dp).pointerInput(dates, hourDp) {
+                    val labelPx = LABEL_WIDTH.toPx()
+                    val hourPx = hourDp.dp.toPx()
+                    fun spot(o: androidx.compose.ui.geometry.Offset): Pair<Int, Int> {
+                        val colWidth = ((size.width - labelPx) / dates.size).coerceAtLeast(1f)
+                        val col = ((o.x - labelPx) / colWidth).toInt().coerceIn(0, dates.size - 1)
+                        // the box is centred on the finger and starts on a quarter of an hour
+                        val raw = o.y / hourPx * 60f - DEFAULT_MINUTES / 2f
+                        return col to (Math.round(raw / 15f) * 15).coerceIn(0, MINUTES_PER_DAY - DEFAULT_MINUTES)
+                    }
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { o -> ghost = spot(o); haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) },
+                        onDrag = { change, _ -> change.consume(); ghost = spot(change.position) },
+                        onDragEnd = { ghost?.let { (c, m) -> onNewAt(dates[c], m) }; ghost = null },
+                        onDragCancel = { ghost = null },
+                    )
+                },
+            ) {
                 Column(Modifier.width(LABEL_WIDTH)) {
                     for (h in 0 until 24) {
                         Box(Modifier.height(hourDp.dp), contentAlignment = Alignment.TopEnd) {
@@ -204,7 +228,7 @@ private fun GridPage(
                         }
                     }
                 }
-                for (d in dates) DayColumn(d, state, colors, d == today, zone, hourDp, t.raised, t.border, Modifier.weight(1f), onOpenEvent, onNewAt)
+                for ((i, d) in dates.withIndex()) DayColumn(d, state, colors, d == today, zone, hourDp, t.raised, t.border, Modifier.weight(1f), onOpenEvent, onNewAt, ghost?.takeIf { it.first == i }?.second)
             }
         }
     }
@@ -213,7 +237,7 @@ private fun GridPage(
 @Composable
 private fun DayColumn(
     date: LocalDate, state: UiState, colors: Map<Long, CalendarInfo>, isToday: Boolean, zone: ZoneId, hourDp: Float,
-    tile: Color, hairline: Color, modifier: Modifier, onOpenEvent: (Instance) -> Unit, onNewAt: (LocalDate, Int) -> Unit,
+    tile: Color, hairline: Color, modifier: Modifier, onOpenEvent: (Instance) -> Unit, onNewAt: (LocalDate, Int) -> Unit, ghostStart: Int? = null,
 ) {
     val placed = remember(state.days, date) { layoutDay(state.dayAt(date)?.events.orEmpty(), date, zone) }
     val newLabel = stringResource(R.string.fab_add)
@@ -230,7 +254,7 @@ private fun DayColumn(
             }
         }
         for (p in placed) {
-            val color = ChipColor.forCalendar(ChipColor.parse(colors[p.event.calendarId]?.colorHex ?: "#00679E"))
+            val color = eventChipColor(p.event, colors[p.event.calendarId])
             val height = (p.endMin - p.startMin) * hourDp / 60f
             val spoken = listOfNotNull(
                 p.event.title.ifBlank { noTitle }, if (p.event.allDay) null else dev.bookah.calendar.timeRangeText(p.event, date, zone), p.event.location?.takeIf { it.isNotBlank() },
@@ -254,8 +278,23 @@ private fun DayColumn(
             }
         }
         if (isToday) NowLine(hourDp)
+        if (ghostStart != null) {
+            val primary = MaterialTheme.colorScheme.primary
+            Box(
+                Modifier.offset(y = (ghostStart * hourDp / 60f).dp).fillMaxWidth().height((DEFAULT_MINUTES * hourDp / 60f).dp)
+                    .clip(RoundedCornerShape(8.dp)).background(primary.copy(alpha = 0.35f)).border(2.dp, primary, RoundedCornerShape(8.dp)).padding(4.dp),
+            ) {
+                Text(
+                    "%02d:%02d – %02d:%02d".format(ghostStart / 60, ghostStart % 60, (ghostStart + DEFAULT_MINUTES) / 60 % 24, (ghostStart + DEFAULT_MINUTES) % 60),
+                    fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
+                )
+            }
+        }
     }
 }
+
+/** The length of an event made by long press and drag (the same one hour as the form's default). */
+private const val DEFAULT_MINUTES = 60
 
 /** A dot and a thin line at the current time, in today's column (updates every half minute). */
 @Composable

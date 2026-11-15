@@ -92,7 +92,7 @@ fun EventSheet(
         }
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(Modifier.padding(top = 10.dp).size(16.dp).clip(RoundedCornerShape(4.dp)).background(ChipColor.parse(calendar?.colorHex ?: "#00679E"))) {}
+                Column(Modifier.padding(top = 10.dp).size(16.dp).clip(RoundedCornerShape(4.dp)).background(ChipColor.parse(event.colorHex ?: calendar?.colorHex ?: "#00679E"))) {}
                 Text(event.title.ifBlank { stringResource(R.string.no_title) }, fontSize = 28.sp, lineHeight = 34.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             Text(whenText(event, zone, texts), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)

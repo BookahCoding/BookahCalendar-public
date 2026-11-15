@@ -20,6 +20,8 @@ data class EventDraft(
     /** A repeating event. A timed one is then written in local time of [zoneId] with its VTIMEZONE, so 10:00 stays 10:00 across daylight saving. */
     val repeat: RepeatRule? = null,
     val zoneId: String? = null,
+    /** A CSS colour name from [EventColors.palette], or null for the calendar's colour. */
+    val color: String? = null,
 )
 
 /**
@@ -33,8 +35,10 @@ data class EventEdit(
     val notes: String? = null,
     val whenAt: EventWhen? = null,
     val reminderMinutes: List<Int>? = null,
+    /** A CSS colour name; an empty text removes the event's own colour (the calendar's is used again). */
+    val color: String? = null,
 ) {
-    val isEmpty get() = title == null && location == null && notes == null && whenAt == null && reminderMinutes == null
+    val isEmpty get() = title == null && location == null && notes == null && whenAt == null && reminderMinutes == null && color == null
 }
 
 enum class ReadOnlyReason {
@@ -271,6 +275,7 @@ object IcsEdit {
         l += line("SUMMARY", escape(draft.title))
         if (draft.location.isNotBlank()) l += line("LOCATION", escape(draft.location))
         if (draft.notes.isNotBlank()) l += line("DESCRIPTION", escape(draft.notes))
+        draft.color?.takeIf { c -> EventColors.palette.any { it.name == c } }?.let { l += line("COLOR", it) }
         l += "SEQUENCE:0"
         for (m in draft.reminderMinutes.distinct()) l += alarmLines(m)
         l += "END:VEVENT"; l += "END:VCALENDAR"
@@ -307,6 +312,7 @@ object IcsEdit {
         edit.title?.let { replaceProp("SUMMARY", line("SUMMARY", escape(it))) }
         edit.location?.let { replaceProp("LOCATION", if (it.isBlank()) null else line("LOCATION", escape(it))) }
         edit.notes?.let { replaceProp("DESCRIPTION", if (it.isBlank()) null else line("DESCRIPTION", escape(it))) }
+        edit.color?.let { c -> replaceProp("COLOR", if (c.isEmpty() || EventColors.palette.none { it.name == c }) null else line("COLOR", c)) }
 
         (whenLines ?: edit.whenAt?.let { whenLines(it) })?.let { newLines ->
             // the old start, end and duration go together (an event never has both an end and a duration)

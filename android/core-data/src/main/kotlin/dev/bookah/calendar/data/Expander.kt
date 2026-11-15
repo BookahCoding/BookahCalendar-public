@@ -38,6 +38,8 @@ data class Instance(
     val readOnly: Boolean,
     /** The slot this occurrence has in its series (the RECURRENCE-ID of an edited occurrence, which may have been moved); equal to [start] otherwise. Series changes name occurrences by this. */
     val originalStart: Long = start,
+    /** The event's own colour ("#RRGGBB" from its COLOR property), or null: then the calendar's colour is used. */
+    val colorHex: String? = null,
 ) {
     val key: String get() = "$calendarId|$uid|$start"
 }
@@ -109,6 +111,7 @@ class Expander {
                 title = e.summary?.value?.ifBlank { null } ?: "", location = e.location?.value?.ifBlank { null },
                 description = e.description?.value?.replace("\r\n", "\n")?.ifBlank { null },     // one kind of line break for display and for the form
                 start = s, end = s + dur, allDay = allDay, zoneId = zone?.id, repeat = repeatInfo(e), alarmMinutes = alarms(e), readOnly = src.readOnly, originalStart = original,
+                colorHex = EventColors.resolve(e.getProperty(biweekly.property.Color::class.java)?.value),
             )
             fun inRange(s: Long) = s < toMs && (s + dur > fromMs || (dur == 0L && s >= fromMs))
             if (e.recurrenceId != null || e.recurrenceRule == null) {

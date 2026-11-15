@@ -141,7 +141,7 @@ private fun DayTile(
         val overflow = events.size > lines
         val shownChips = if (overflow) (lines - 1).coerceAtLeast(0) else events.size
         for (e in events.take(shownChips)) {
-            val chip = ChipColor.forCalendar(ChipColor.parse(colors[e.calendarId]?.colorHex ?: "#00679E"))
+            val chip = eventChipColor(e, colors[e.calendarId])
             // read-only events (feeds) get a hairline outline and a small lock (docs/design-spec.md 3.3)
             val outline = if (e.readOnly) Modifier.border(1.dp, chip.text.copy(alpha = 0.55f), RoundedCornerShape(4.dp)) else Modifier
             Row(

@@ -215,6 +215,22 @@
     <string name="sync_err_gone">The server does not allow this or could not find the calendar.</string>
     <string name="sync_err_other">The last sync did not work. What is saved on this phone is still shown.</string>
 
+    <!-- event colour -->
+    <string name="color_title">Colour</string>
+    <string name="color_calendar">Same as the calendar</string>
+    <string name="color_tomato">Tomato</string>
+    <string name="color_salmon">Salmon</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_gold">Gold</string>
+    <string name="color_lightgreen">Light green</string>
+    <string name="color_green">Green</string>
+    <string name="color_turquoise">Turquoise</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_lilac">Lilac</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_pink">Pink</string>
+    <string name="color_gray">Gray</string>
+
     <!-- search -->
     <string name="search">Search</string>
     <string name="search_hint">Search events</string>

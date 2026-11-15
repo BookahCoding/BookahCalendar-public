@@ -60,6 +60,18 @@ import dev.bookah.calendar.data.IcsEdit
 import dev.bookah.calendar.data.Instance
 import dev.bookah.calendar.data.Source
 import dev.bookah.calendar.reminderText
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import dev.bookah.calendar.data.EventColors
 import dev.bookah.calendar.data.RepeatEnd
 import dev.bookah.calendar.data.RepeatFreq
 import dev.bookah.calendar.data.RepeatRule
@@ -85,6 +97,8 @@ private const val DAY_MS = 86_400_000L
 private data class Initial(
     val title: String, val allDay: Boolean, val start: LocalDateTime, val end: LocalDateTime,
     val location: String, val notes: String, val reminders: List<Int>, val calendarId: Long,
+    /** "" = the calendar's colour, a palette name, or "?" for an own colour the form cannot show (left alone unless the user picks another). */
+    val colorName: String = "",
 )
 
 private fun initialFor(editor: Editor, state: UiState, zone: ZoneId): Initial = when (editor) {
@@ -96,18 +110,19 @@ private fun initialFor(editor: Editor, state: UiState, zone: ZoneId): Initial = 
             editor.day == LocalDate.now(zone) -> now.plusHours(1).withMinute(0).withSecond(0).withNano(0)
             else -> editor.day.atTime(9, 0)
         }
-        Initial("", false, start, start.plusHours(1), "", "", emptyList(), first)
+        Initial("", false, start, start.plusHours(1), "", "", listOf(0), first)          // a reminder at the time of the event is already set up
     }
     is Editor.Existing -> {
         val e: Instance = editor.event
+        val colorName = if (e.colorHex == null) "" else EventColors.choiceFor(e.colorHex)?.name ?: "?"
         if (e.allDay) {
             val first = LocalDate.ofEpochDay(Math.floorDiv(e.start, DAY_MS))
             val last = LocalDate.ofEpochDay(Math.floorDiv(maxOf(e.end - 1, e.start), DAY_MS))
-            Initial(e.title, true, first.atTime(9, 0), last.atTime(10, 0), e.location.orEmpty(), e.description.orEmpty(), editor.reminders, e.calendarId)
+            Initial(e.title, true, first.atTime(9, 0), last.atTime(10, 0), e.location.orEmpty(), e.description.orEmpty(), editor.reminders, e.calendarId, colorName)
         } else {
             val s = Instant.ofEpochMilli(e.start).atZone(zone).toLocalDateTime()
             val en = Instant.ofEpochMilli(maxOf(e.end, e.start)).atZone(zone).toLocalDateTime()
-            Initial(e.title, false, s, en, e.location.orEmpty(), e.description.orEmpty(), editor.reminders, e.calendarId)
+            Initial(e.title, false, s, en, e.location.orEmpty(), e.description.orEmpty(), editor.reminders, e.calendarId, colorName)
         }
     }
 }
@@ -142,6 +157,7 @@ fun EditEventScreen(
     var notes by rememberSaveable(editor) { mutableStateOf(init.notes) }
     var reminders by rememberSaveable(editor) { mutableStateOf(ArrayList(init.reminders)) }
     var calendarId by rememberSaveable(editor) { mutableStateOf(init.calendarId) }
+    var colorName by rememberSaveable(editor) { mutableStateOf(init.colorName) }
     var picker by remember { mutableStateOf<String?>(null) }          // "start-date", "start-time", "end-date", "end-time"
     var askDiscard by remember { mutableStateOf(false) }
     var pendingEdit by remember { mutableStateOf<EventEdit?>(null) }
@@ -171,8 +187,8 @@ fun EditEventScreen(
     )
     val repeatProblem = rule?.problem(start.toLocalDate())
     val writable = remember(state.calendars) { state.calendars.filter { it.source == Source.Nextcloud && it.editable } }
-    val dirty = if (isNew) title.isNotBlank() || location.isNotBlank() || notes.isNotBlank() || reminders.isNotEmpty()
-    else title != init.title || location != init.location || notes != init.notes || whenAt != initialWhen || reminders.toSet() != init.reminders.toSet()
+    val dirty = if (isNew) title.isNotBlank() || location.isNotBlank() || notes.isNotBlank() || reminders.toSet() != init.reminders.toSet() || colorName != init.colorName
+    else title != init.title || location != init.location || notes != init.notes || whenAt != initialWhen || reminders.toSet() != init.reminders.toSet() || colorName != init.colorName
     val canSave = !state.saving && timeProblem == null && repeatProblem == null && (if (isNew) title.isNotBlank() && calendarId > 0 else dirty)
 
     BackHandler { if (dirty && !state.saving) askDiscard = true else onClose() }
@@ -188,7 +204,7 @@ fun EditEventScreen(
 
     fun doSave() {
         if (isNew) {
-            onCreate(calendarId, EventDraft(title.trim(), whenAt, location.trim(), notes.trim(), reminders.toList(), rule, zone.id))
+            onCreate(calendarId, EventDraft(title.trim(), whenAt, location.trim(), notes.trim(), reminders.toList(), rule, zone.id, colorName.takeIf { it.isNotEmpty() && it != "?" }))
         } else {
             val event = (editor as Editor.Existing).event
             val edit = EventEdit(
@@ -197,6 +213,7 @@ fun EditEventScreen(
                 notes = notes.trim().takeIf { it != init.notes },
                 whenAt = whenAt.takeIf { it != initialWhen },
                 reminderMinutes = reminders.toList().takeIf { reminders.toSet() != init.reminders.toSet() },
+                color = if (colorName == init.colorName || colorName == "?") null else colorName,
             )
             if (isSeries) pendingEdit = edit else onSave(event, edit, null)       // a series asks "this / following / all" first
         }
@@ -258,6 +275,7 @@ fun EditEventScreen(
                     problem = repeatProblem != null,
                 )
             }
+            ColorPicker(colorName, state.calendars.firstOrNull { it.id == calendarId }?.colorHex, { colorName = it })
             HorizontalDivider()
             OutlinedTextField(location, { location = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.form_place)) }, singleLine = true)
             Text(stringResource(R.string.form_reminders), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
@@ -333,6 +351,44 @@ fun EditEventScreen(
             confirmButton = { TextButton({ askDiscard = false; onClose() }) { Text(stringResource(R.string.form_discard)) } },
             dismissButton = { TextButton({ askDiscard = false }) { Text(stringResource(R.string.form_keep_editing)) } },
         )
+    }
+}
+
+@Composable
+private fun colorLabel(name: String): String = stringResource(
+    when (name) {
+        "tomato" -> R.string.color_tomato; "salmon" -> R.string.color_salmon; "orange" -> R.string.color_orange; "gold" -> R.string.color_gold
+        "mediumseagreen" -> R.string.color_lightgreen; "seagreen" -> R.string.color_green; "turquoise" -> R.string.color_turquoise
+        "royalblue" -> R.string.color_blue; "mediumpurple" -> R.string.color_lilac; "purple" -> R.string.color_purple
+        "hotpink" -> R.string.color_pink; else -> R.string.color_gray
+    },
+)
+
+/** The colour of this event: "same as the calendar" or one of twelve colours. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ColorPicker(selected: String, calendarHex: String?, onPick: (String) -> Unit) {
+    Text(stringResource(R.string.color_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        // first: the calendar's own colour (no colour written into the event)
+        Swatch(calendarHex?.let { dev.bookah.calendar.design.ChipColor.parse(it) } ?: MaterialTheme.colorScheme.primary, stringResource(R.string.color_calendar), selected == "") { onPick("") }
+        for (c in EventColors.palette) Swatch(dev.bookah.calendar.design.ChipColor.parse(c.hex), colorLabel(c.name), selected == c.name) { onPick(c.name) }
+    }
+}
+
+@Composable
+private fun Swatch(color: androidx.compose.ui.graphics.Color, label: String, isSelected: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier.size(48.dp).clip(androidx.compose.foundation.shape.CircleShape)
+            .semantics { contentDescription = label; selected = isSelected; role = androidx.compose.ui.semantics.Role.RadioButton }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(color)
+                .border(if (isSelected) 3.dp else 1.dp, if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center,
+        ) { if (isSelected) Icon(androidx.compose.material.icons.Icons.Default.Check, null, Modifier.size(18.dp), tint = if (color.luminance() > 0.5f) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White) }
     }
 }
 

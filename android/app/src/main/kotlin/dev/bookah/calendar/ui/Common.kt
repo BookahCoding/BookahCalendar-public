@@ -68,10 +68,13 @@ fun CappedFontScale(max: Float, content: @Composable () -> Unit) {
 /** Opens the search page; provided once by the main activity so every main screen's top bar can show the search button. */
 val LocalOpenSearch = androidx.compose.runtime.staticCompositionLocalOf<(() -> Unit)?> { null }
 
+/** The chip colours of an event: its own colour if it has one, else its calendar's. */
+fun eventChipColor(e: Instance, calendar: CalendarInfo?): dev.bookah.calendar.design.ChipColors = ChipColor.forCalendar(ChipColor.parse(e.colorHex ?: calendar?.colorHex ?: "#00679E"))
+
 /** A full-width event card in the calendar's own colour, with black or white text chosen for contrast. */
 @Composable
 fun EventCard(e: Instance, calendar: CalendarInfo?, day: LocalDate, zone: ZoneId, onClick: () -> Unit) {
-    val chip = ChipColor.forCalendar(ChipColor.parse(calendar?.colorHex ?: "#00679E"))
+    val chip = eventChipColor(e, calendar)
     // read-only events (feeds) get a hairline outline and a lock, so they are told apart from editable ones (docs/design-spec.md 3.3)
     val outline = if (e.readOnly) Modifier.border(1.dp, chip.text.copy(alpha = 0.55f), RoundedCornerShape(16.dp)) else Modifier
     Column(
