@@ -105,6 +105,7 @@ Measured contrast for Washi & Ink (WCAG ratio, computed 15 Nov): text on Bg 17.9
 - The twelve pictures are AI-generated ukiyo-e style artwork made with Grok by the owner (see `docs/CREDITS.md`), cropped 3:1 and stored as 1200 x 400 WebP in `res/drawable-nodpi/banner_MM.webp` by `tools/make-banners.py`. Month to picture is the fixed table in `MonthArt` (Jan snowy street, Feb plum in snow, Mar hina dolls, Apr sakura river, May koinobori, Jun hydrangeas, Jul Tanabata, Aug fireworks, Sep moon viewing, Oct chrysanthemums, Nov maples, Dec Fuji village). This replaces the earlier code-drawn vector motifs.
 - Banner height about 120 dp with a 16 dp radius (Month view 56 dp, no label); it carries the month name as readable text on a scrim of the theme's Surface colour on the left. Dark themes dim the picture by 22%.
 - Reduced motion: no animation in artwork; high text contrast mode drops the picture and keeps the label.
+- Grounds (from 1.1.2): every family has its own tinted paper (light) and night (dark) grounds, as in Hikyaku for Android (Washi & Ink: washi paper `F4EDD9`, indigo night `0E1424`); Settings has a Pure black switch for dark mode.
 - Themes: besides the 11 Hikyaku families, six families take their accents from the pictures (Sakura, Plum & Snow, Hydrangea Rain, Moon Viewing, Fireworks, Autumn Maple); every text pair is checked at 4.5:1 by `ThemeContrastTest`.
 
 ### 3.5 Icon

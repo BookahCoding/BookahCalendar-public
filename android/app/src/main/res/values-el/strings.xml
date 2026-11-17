@@ -34,6 +34,8 @@
     <string name="appearance_light">Φωτεινή</string>
     <string name="appearance_dark">Σκοτεινή</string>
     <string name="appearance_system">Σύστημα</string>
+    <string name="pure_black">Απόλυτο μαύρο</string>
+    <string name="pure_black_hint">Μαύρο φόντο στη σκοτεινή εμφάνιση, καλύτερο για οθόνες OLED.</string>
     <string name="theme">Θέμα</string>
     <string name="settings_feeds">Ημερολόγια μόνο για ανάγνωση</string>
     <string name="settings_feeds_hint">Μια μυστική διεύθυνση iCal, για παράδειγμα από το Google Calendar. Τα γεγονότα εμφανίζονται, αλλά δεν αλλάζουν ποτέ.</string>

@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val model: AppViewModel = viewModel(factory = AppViewModel.Factory(graph))
             val state by model.state.collectAsStateWithLifecycle()
-            BookahTheme(state.prefs.themeId, state.prefs.appearance) {
+            BookahTheme(state.prefs.themeId, state.prefs.appearance, state.prefs.pureBlack) {
                 // coming back to the app: pick up what a background refresh changed meanwhile
                 androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { model.onResume() }
                 // Android 13+ needs a one-time yes for notifications before a reminder can ring; asked once after sign-in, never nagged
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                             val openDay = state.openDay
                             when {
                                 state.searchOpen -> SearchScreen(state, onBack = { model.openSearch(false) }, onOpenEvent = model::openEvent)
-                                state.settingsOpen -> SettingsScreen(state, onBack = { model.openSettings(false) }, onAddFeed = model::addFeed, onRemoveFeed = model::removeFeed, onSignOut = model::signOut, onTheme = model::setTheme, onAppearance = model::setAppearance, onWeekStart = model::setWeekStart, onSearchWeatherPlace = model::searchWeatherPlace, onChooseWeatherPlace = model::chooseWeatherPlace, onRemoveWeatherPlace = model::removeWeatherPlace, onCheckUpdates = model::checkUpdates)
+                                state.settingsOpen -> SettingsScreen(state, onBack = { model.openSettings(false) }, onAddFeed = model::addFeed, onRemoveFeed = model::removeFeed, onSignOut = model::signOut, onTheme = model::setTheme, onAppearance = model::setAppearance, onPureBlack = model::setPureBlack, onWeekStart = model::setWeekStart, onSearchWeatherPlace = model::searchWeatherPlace, onChooseWeatherPlace = model::chooseWeatherPlace, onRemoveWeatherPlace = model::removeWeatherPlace, onCheckUpdates = model::checkUpdates)
                                 openDay != null -> DayListScreen(openDay, state, onBack = { model.openDay(null) }, onOpenEvent = model::openEvent)
                                 state.view == ViewMode.Month -> MonthScreen(state, onMenu = { scope.launch { drawer.open() } }, onOpenDay = model::openDay)
                                 state.view == ViewMode.Day || state.view == ViewMode.ThreeDays || state.view == ViewMode.Week -> androidx.compose.runtime.key(state.view) {

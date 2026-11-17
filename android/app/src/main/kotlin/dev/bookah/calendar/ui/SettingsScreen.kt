@@ -50,6 +50,7 @@ import dev.bookah.calendar.R
 import dev.bookah.calendar.UiState
 import dev.bookah.calendar.design.Appearance
 import dev.bookah.calendar.design.ThemeCatalog
+import dev.bookah.calendar.design.pureBlack
 import java.time.DayOfWeek
 
 /**
@@ -65,6 +66,7 @@ fun SettingsScreen(
     onSignOut: () -> Unit,
     onTheme: (String) -> Unit,
     onAppearance: (Appearance) -> Unit,
+    onPureBlack: (Boolean) -> Unit,
     onWeekStart: (DayOfWeek) -> Unit,
     onSearchWeatherPlace: (String) -> Unit,
     onChooseWeatherPlace: (dev.bookah.calendar.data.Place) -> Unit,
@@ -92,9 +94,16 @@ fun SettingsScreen(
                     FilterChip(state.prefs.appearance == a, { onAppearance(a) }, { Text(stringResource(label)) })
                 }
             }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.pure_black), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.pure_black_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                androidx.compose.material3.Switch(state.prefs.pureBlack, onPureBlack)
+            }
             Text(stringResource(R.string.theme), style = MaterialTheme.typography.bodyLarge)
             for (family in ThemeCatalog.all) {
-                val sample = if (state.prefs.appearance == Appearance.Dark) family.dark else family.light
+                val sample = if (state.prefs.appearance == Appearance.Dark) (if (state.prefs.pureBlack) family.dark.pureBlack() else family.dark) else family.light
                 Row(Modifier.fillMaxWidth().clickable { onTheme(family.id) }, verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(state.prefs.themeId == family.id, { onTheme(family.id) })
                     // a little preview of the family: its paper, its two accents

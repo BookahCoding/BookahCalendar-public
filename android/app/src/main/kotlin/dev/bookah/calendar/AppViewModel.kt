@@ -146,6 +146,7 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
 
     fun setTheme(id: String) { viewModelScope.launch { graph.prefs.setTheme(id) } }
     fun setAppearance(a: dev.bookah.calendar.design.Appearance) { viewModelScope.launch { graph.prefs.setAppearance(a) } }
+    fun setPureBlack(on: Boolean) { viewModelScope.launch { graph.prefs.setPureBlack(on) } }
     fun setWeekStart(d: java.time.DayOfWeek) { viewModelScope.launch { graph.prefs.setWeekStart(d) } }
 
     // ------------------------------------------------------------------------------------------ weather (only when a place is set)

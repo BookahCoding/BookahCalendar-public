@@ -34,6 +34,8 @@
     <string name="appearance_light">Light</string>
     <string name="appearance_dark">Dark</string>
     <string name="appearance_system">System</string>
+    <string name="pure_black">Pure black</string>
+    <string name="pure_black_hint">A black page in dark mode, easier on OLED screens.</string>
     <string name="theme">Theme</string>
     <string name="settings_feeds">Read-only calendar feeds</string>
     <string name="settings_feeds_hint">A secret iCal address, for example from Google Calendar. Events from a feed can be shown but never changed.</string>
