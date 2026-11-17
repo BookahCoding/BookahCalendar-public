@@ -87,6 +87,25 @@ object ThemeCatalog {
         ThemeFamily("akihabara", "Akihabara", "green neon, violet signs and black-blue streets",
             light("0E1A24", "1E2D3A", "48596A", "06703A", "FFFFFF", "200E1A24", "B3202B", "0B6B3A", "855608", "06703A", "F8FAFC", "5A2DD0", "FFFFFF"),
             dark("E9F4F1", "CFE0DC", "9FB4B0", "2BE37A", "0A0A0C", "33E9F4F1", "FF6B7A", "2BE37A", "FFC857", "2BE37A", "E9F4F1", "A080FF", "0A0A0C")),
+        // Families taken from the month pictures (see docs/CREDITS.md); accents were sampled from the art, then darkened or lightened until every text pair reaches 4.5:1.
+        ThemeFamily("sakura", "Sakura", "blossom pink, lacquer gold and warm shoji paper",
+            light("2B1E22", "43303A", "72565F", "AC3558", "FFFFFF", "142B1E22", "8E1F2E", "2F6A4A", "84600E", "C0405E", "FDF8F7", "86600A", "FFFFFF"),
+            dark("F8EEF0", "E4D0D5", "B39BA2", "F2A0B8", "1A0F12", "33F8EEF0", "F4848F", "7FC09A", "E2BC62", "E27A93", "F8EEF0", "E8C46A", "080808")),
+        ThemeFamily("plum-snow", "Plum & Snow", "snow grey, winter blue and plum blossom",
+            light("1C2530", "31404E", "5A6B7B", "35688C", "FFFFFF", "141C2530", "8E1F2E", "2F6A4A", "84600E", "B23A60", "F7FAFC", "A32D58", "FFFFFF"),
+            dark("EDF3F8", "CBD8E4", "8EA2B4", "8EC0E4", "0A141C", "33EDF3F8", "F4848F", "7FC09A", "E2BC62", "E87A98", "EDF3F8", "F290AC", "080808")),
+        ThemeFamily("hydrangea", "Hydrangea Rain", "hydrangea blue, rain grey and wet leaf green",
+            light("18202E", "2C3A4E", "56667C", "3A58A4", "FFFFFF", "1418202E", "8E1F2E", "2F6A4A", "84600E", "4A6AB8", "F5F8FC", "2A6A52", "FFFFFF"),
+            dark("ECF1FA", "CCD6EA", "90A0BC", "A0B6F2", "0C1224", "33ECF1FA", "F4848F", "7FC09A", "E2BC62", "7C98E4", "ECF1FA", "8CCCA8", "080808")),
+        ThemeFamily("moon-viewing", "Moon Viewing", "harvest moon gold, indigo dusk and pampas grass",
+            light("241E10", "3A3220", "6A5E40", "86580A", "FFFFFF", "14241E10", "8E1F2E", "2F6A4A", "84600E", "B27A1A", "FBF6E6", "2A3F7C", "FFFFFF"),
+            dark("F6EFD6", "DCD2AE", "A89C78", "F0CC6E", "14110A", "33F6EFD6", "F4848F", "7FC09A", "E2BC62", "E0B450", "F6EFD6", "A2B4EC", "080808")),
+        ThemeFamily("fireworks", "Fireworks", "navy summer night, lantern red and firework gold",
+            light("0E1630", "1E2C50", "4A5C84", "1F3A7E", "FFFFFF", "140E1630", "8E1F2E", "2F6A4A", "84600E", "C4452A", "F6F8FF", "AE3A22", "FFFFFF"),
+            dark("EEF2FF", "CFD8F0", "94A4CC", "F4B84A", "0A0E1C", "33EEF2FF", "F4848F", "7FC09A", "E2BC62", "E8563A", "EEF2FF", "86A6F4", "080808")),
+        ThemeFamily("maple", "Autumn Maple", "maple red-orange, cream paper and misty blue",
+            light("2A1C14", "433026", "74584A", "AE3E16", "FFFFFF", "142A1C14", "8E1F2E", "2F6A4A", "84600E", "C04A20", "FCF6EC", "2F5C74", "FFFFFF"),
+            dark("F8EFE4", "E2D2C0", "B09A86", "F2905A", "1A0F08", "33F8EFE4", "F4848F", "7FC09A", "E2BC62", "E0703C", "F8EFE4", "90C0DA", "080808")),
     )
 
     fun get(id: String): ThemeFamily = all.firstOrNull { it.id == id } ?: all.first()

@@ -73,6 +73,20 @@ fun MonthScreen(state: UiState, onMenu: () -> Unit, onOpenDay: (LocalDate) -> Un
             actions = { TextButton({ scope.launch { pager.animateScrollToPage(todayPage) } }) { Text(stringResource(R.string.today)) } },
         )
         SyncStatusLine(state)
+        HorizontalPager(pager, Modifier.fillMaxSize(), key = { it }) { page ->
+            val pageMonth = firstMonth.plusMonths(page.toLong())
+            Column(Modifier.fillMaxSize()) {
+                // the month's picture above the grid, shorter than the Schedule's so the six rows keep their room
+                MonthBanner(pageMonth.month, "", height = 56.dp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), showTitle = false)
+                WeekdayHeader(state)
+                CappedFontScale(1.15f) { MonthGrid(pageMonth, state, colors, onOpenDay) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeekdayHeader(state: UiState) {
         CappedFontScale(1.15f) { Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp)) {
             for (i in 0 until 7) {
                 Text(
@@ -82,10 +96,6 @@ fun MonthScreen(state: UiState, onMenu: () -> Unit, onOpenDay: (LocalDate) -> Un
                 )
             }
         } }
-        HorizontalPager(pager, Modifier.fillMaxSize(), key = { it }) { page ->
-            CappedFontScale(1.15f) { MonthGrid(firstMonth.plusMonths(page.toLong()), state, colors, onOpenDay) }
-        }
-    }
 }
 
 @Composable

@@ -100,11 +100,12 @@ Measured contrast for Washi & Ink (WCAG ratio, computed 15 Nov): text on Bg 17.9
 - Examples computed on 15 Nov: Personal `#00679E` takes white (6.12:1); Birthdays `#E9D859` takes black (14.43:1); a mid-grey `#7A7A7A` takes black (4.89:1, white would be 4.29).
 - A multi-calendar overlay never blends colours. Google (read-only) events get a small lock glyph on the chip and a hairline outline.
 
-### 3.4 Artwork (original, drawn in code)
-- Only here: **Schedule month banners** (12 seasonal ukiyo-e motifs, one per month, shown at the start of each month in the Schedule), the **drawer header strip**, **empty states** (the "quiet day", empty search, no calendars), the About screen, and the icon. Never behind event text, in the time grid, or under any text that must be read.
-- Style: ukiyo-e woodblock look in flat colour shapes: great-wave crest with foam claws, Mount Fuji with a snowcap, a sun disc, pines, irises, cranes, reeds; tinted from the current theme's two accents plus neutral paper or ink so every theme gets its own banners. Drawn as vector shapes in code (like `tools/make-icon.py`): no museum scans, no downloads, no licence questions, a tiny app size.
-- Banner height about 120 dp with a 16 dp radius; it carries the month name as readable text on a scrim of the theme's Surface colour, never on the busy part of the drawing.
-- Reduced motion: no animation in artwork; high contrast mode drops the artwork and keeps the label.
+### 3.4 Artwork (pictures, from 1.1.1)
+- Only here: **month banners** (one picture per month: Schedule at each month start, a 56 dp strip above the Month grid, the drawer header strip, the About screen), **empty states** and the icon. Never behind event text, in the time grid, or under any text that must be read.
+- The twelve pictures are AI-generated ukiyo-e style artwork made with Grok by the owner (see `docs/CREDITS.md`), cropped 3:1 and stored as 1200 x 400 WebP in `res/drawable-nodpi/banner_MM.webp` by `tools/make-banners.py`. Month to picture is the fixed table in `MonthArt` (Jan snowy street, Feb plum in snow, Mar hina dolls, Apr sakura river, May koinobori, Jun hydrangeas, Jul Tanabata, Aug fireworks, Sep moon viewing, Oct chrysanthemums, Nov maples, Dec Fuji village). This replaces the earlier code-drawn vector motifs.
+- Banner height about 120 dp with a 16 dp radius (Month view 56 dp, no label); it carries the month name as readable text on a scrim of the theme's Surface colour on the left. Dark themes dim the picture by 22%.
+- Reduced motion: no animation in artwork; high text contrast mode drops the picture and keeps the label.
+- Themes: besides the 11 Hikyaku families, six families take their accents from the pictures (Sakura, Plum & Snow, Hydrangea Rain, Moon Viewing, Fireworks, Autumn Maple); every text pair is checked at 4.5:1 by `ThemeContrastTest`.
 
 ### 3.5 Icon
 Chosen draft **B** (a great wave and a vermilion sun on a calendar page, date seal in the wave; vermilion rounded square like Hikyaku's icon). To finish in Phase 1: outlined day number, adaptive layers (foreground inside the 66/108 safe circle, background, monochrome), and a check at 48 px.

@@ -228,6 +228,7 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
             Section(R.string.about)
+            MonthBanner(java.time.LocalDate.now().month, "BookahCalendar", height = 96.dp)
             Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodyLarge)
             Text(stringResource(R.string.about_credits), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             var showLicences by remember { mutableStateOf(false) }
@@ -267,6 +268,12 @@ private fun themeDescription(id: String, fallback: String): String {
         "irises" -> R.string.theme_desc_irises
         "shibuya-night" -> R.string.theme_desc_shibuya_night
         "akihabara" -> R.string.theme_desc_akihabara
+        "sakura" -> R.string.theme_desc_sakura
+        "plum-snow" -> R.string.theme_desc_plum_snow
+        "hydrangea" -> R.string.theme_desc_hydrangea
+        "moon-viewing" -> R.string.theme_desc_moon_viewing
+        "fireworks" -> R.string.theme_desc_fireworks
+        "maple" -> R.string.theme_desc_maple
         else -> return fallback
     }
     return stringResource(res)

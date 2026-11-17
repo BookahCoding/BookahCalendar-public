@@ -56,7 +56,7 @@
     <string name="updates_failed">The answer from GitHub could not be used.</string>
     <string name="about">About</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_credits">Made by BookahCoding. Theme colours come from the Hikyaku and Herald design tokens (MIT licence, Copyright (c) 2026 Giton22). Calendar files are read with biweekly (BSD-2-Clause) and the network with OkHttp (Apache-2.0). The artwork is original vector drawing; no museum image is used. This app contacts only your Nextcloud server and the feed addresses you add, GitHub when you tap "Check for updates" (released builds only), and, if you set a place for the weather, Open-Meteo (open-meteo.com, data under CC BY 4.0), which receives only the coordinates of that place. It has no analytics and uploads no crash reports.</string>
+    <string name="about_credits">Made by BookahCoding. Theme colours come from the Hikyaku and Herald design tokens (MIT licence, Copyright (c) 2026 Giton22). Calendar files are read with biweekly (BSD-2-Clause) and the network with OkHttp (Apache-2.0). The month pictures are AI-generated ukiyo-e style artwork made with Grok by the app owner and released under the same MIT licence as the code; no museum image is used. This app contacts only your Nextcloud server and the feed addresses you add, GitHub when you tap "Check for updates" (released builds only), and, if you set a place for the weather, Open-Meteo (open-meteo.com, data under CC BY 4.0), which receives only the coordinates of that place. It has no analytics and uploads no crash reports.</string>
     <string name="speed">Speed</string>
     <string name="speed_start">Screen opened to events ready: %1$s ms</string>
     <string name="speed_expand">Last expansion of events: %1$s ms</string>
@@ -210,6 +210,12 @@
     <string name="theme_desc_irises">iris violet, lavender paper and aubergine ink</string>
     <string name="theme_desc_shibuya_night">magenta signs, cyan light and violet night</string>
     <string name="theme_desc_akihabara">green neon, violet signs and black-blue streets</string>
+    <string name="theme_desc_sakura">blossom pink, lacquer gold and warm shoji paper</string>
+    <string name="theme_desc_plum_snow">snow grey, winter blue and plum blossom</string>
+    <string name="theme_desc_hydrangea">hydrangea blue, rain grey and wet leaf green</string>
+    <string name="theme_desc_moon_viewing">harvest moon gold, indigo dusk and pampas grass</string>
+    <string name="theme_desc_fireworks">navy summer night, lantern red and firework gold</string>
+    <string name="theme_desc_maple">maple red-orange, cream paper and misty blue</string>
 
     <string name="sync_err_auth">The server did not accept the user name or app password. Sign in again in Settings.</string>
     <string name="sync_err_gone">The server does not allow this or could not find the calendar.</string>
