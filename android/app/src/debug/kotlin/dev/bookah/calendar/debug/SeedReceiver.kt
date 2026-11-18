@@ -25,7 +25,18 @@ import java.time.format.DateTimeFormatter
 class SeedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         // `am broadcast -a dev.bookah.calendar.TOUCH --es title "<exact title>"`: change that event on the fake server only (no re-seeding)
+        // `--es show "<exact title>"` instead: log that generated task's STATUS / PERCENT-COMPLETE / COMPLETED lines on the fake server (tag BookahFake)
+        if (intent.action == "dev.bookah.calendar.TOUCH" && intent.hasExtra("show")) {
+            android.util.Log.i("BookahFake", "tick lines: " + (FakeServer.current?.tickLines(intent.getStringExtra("show").orEmpty()) ?: "no fake server"))
+            return
+        }
         if (intent.action == "dev.bookah.calendar.TOUCH") { intent.getStringExtra("title")?.let { FakeServer.current?.touch(it) }; return }
+        // `am broadcast -a dev.bookah.calendar.FAKE_OFFLINE --ez on true|false`: the fake server refuses every write as unreachable (or works again)
+        // `--ez lose true|false` instead: writes reach the fake server but their answer is lost (the "may have been saved" case)
+        if (intent.action == "dev.bookah.calendar.FAKE_OFFLINE") {
+            FakeServer.current?.let { f -> if (intent.hasExtra("lose")) f.loseAnswer = intent.getBooleanExtra("lose", false) else f.offline = intent.getBooleanExtra("on", true) }
+            return
+        }
         val count = intent.getIntExtra("count", 800)
         val graph = (context.applicationContext as BookahApp).graph
         runBlocking { graph.sessions.save(Session("https://calendar.invalid", "tester", "not-a-real-password")) }
@@ -38,6 +49,8 @@ class SeedReceiver : BroadcastReceiver() {
                 // a task-only list (what the Nextcloud Tasks app makes) and a list that takes both events and tasks
                 RemoteCalendar("/cal/tasks/", "Generated tasks", "#3E8E41", true, kind = ListKind.Tasks),
                 RemoteCalendar("/cal/mixed/", "Generated mixed", "#C0504D", true, kind = ListKind.Both),
+                // a task list shared read-only: its tasks are shown but never ticked here
+                RemoteCalendar("/cal/shared-tasks/", "Generated shared tasks", "#8E6E3E", false, kind = ListKind.Tasks),
             ),
         ).filter { it.kind == ListKind.Events }
         seedTasks(graph)
@@ -107,7 +120,8 @@ class SeedReceiver : BroadcastReceiver() {
  */
 private fun seedTasks(graph: dev.bookah.calendar.AppGraph) {
     val all = graph.store.calendars()
-    val tasks = all.first { it.kind == ListKind.Tasks }
+    val tasks = all.first { it.kind == ListKind.Tasks && it.editable }
+    val shared = all.first { it.kind == ListKind.Tasks && !it.editable }
     val mixed = all.first { it.kind == ListKind.Both }
     val zone = java.time.ZoneId.systemDefault()
     val utc = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")
@@ -134,8 +148,18 @@ private fun seedTasks(graph: dev.bookah.calendar.AppGraph) {
         "t-coerced-due" to todo("t-coerced-due@invalid", "Generated task, deadline 23:59", "DTSTART:${at(today.plusDays(2), 9, 0)}", "DUE:${at(today.plusDays(4), 23, 59)}"),
         "t-start-only" to todo("t-start-only@invalid", "Generated task, start only", "DTSTART;VALUE=DATE:${date(today.plusDays(5))}"),
         "t-done" to todo("t-done@invalid", "Generated finished task", "DUE;VALUE=DATE:${date(today)}", "STATUS:COMPLETED", "COMPLETED:20260101T000000Z"),
+        // slice 2: a repeating task (never ticked here: the page says to use BookahTasks), a plain one with an X- line of another app and a
+        // folded note (both must survive a tick byte for byte), and a parent whose only subtask is done (so it can be ticked)
+        "t-repeat" to todo("t-repeat@invalid", "Generated repeating task", "DTSTART;VALUE=DATE:${date(today)}", "DUE;VALUE=DATE:${date(today)}", "RRULE:FREQ=WEEKLY"),
+        "t-plain" to todo("t-plain@invalid", "Generated plain task", "DUE;VALUE=DATE:${date(today)}", "STATUS:NEEDS-ACTION", "X-GENERATED-APP:kept",
+            "DESCRIPTION:Generated note long enough to be folded by the writer over more than one physical\r\n  line of the file."),
+        "t-parent-done" to todo("t-parent-done@invalid", "Generated parent, subtask done", "DUE;VALUE=DATE:${date(today.plusDays(1))}"),
+        // in progress at 40 percent: an undo of its tick must bring back exactly that
+        "t-inprocess" to todo("t-inprocess@invalid", "Generated task in progress", "DUE;VALUE=DATE:${date(today)}", "STATUS:IN-PROCESS", "PERCENT-COMPLETE:40"),
+        "t-child-done" to todo("t-child-done@invalid", "Generated finished subtask", "RELATED-TO:t-parent-done@invalid", "STATUS:COMPLETED", "COMPLETED:20260101T000000Z"),
     ).map { (name, ics) -> RemoteObject("${tasks.href}$name.ics", "t-$name", ics) }
     graph.store.upsertObjects(tasks.id, taskObjects)
+    graph.store.upsertObjects(shared.id, listOf(RemoteObject("${shared.href}s-shared.ics", "s1", todo("s-shared@invalid", "Generated shared read-only task", "DUE;VALUE=DATE:${date(today)}"))))
     val mixedObjects = listOf(
         RemoteObject("${mixed.href}m-undated.ics", "m1", todo("m-undated@invalid", "Generated mixed-list task without a date")),
         RemoteObject("${mixed.href}m-dated.ics", "m2", todo("m-dated@invalid", "Generated mixed-list task", "DUE:${at(today.plusDays(1), 10, 0)}")),

@@ -11,8 +11,12 @@
   and runs `LiveWriteTest`. The test makes a calendar named bookahtest-<random>, creates, edits, conflicts and deletes one event in it,
   then deletes the calendar and its trash bin entries and checks that nothing is left. Personal and every other calendar are never touched.
   Nothing secret is printed: the test prints step names and HTTP status codes only.
+
+  -Series runs the repeating-events cycle (LiveSeriesTest). -Tasks runs the task tick cycle (LiveTaskTest): it makes a throw-away TASK list
+  bookahtest-<random> (VTODO only), creates one plain task with a raw request, ticks it, undoes the tick, checks a wrong ETag gets 412 and
+  that a change elsewhere gives a conflict with nothing written, then removes the list for good (X-NC-CalDAV-No-Trashbin) and checks 0 left.
 #>
-param([switch]$OwnerApproved, [switch]$Series)
+param([switch]$OwnerApproved, [switch]$Series, [switch]$Tasks)
 $ErrorActionPreference = "Stop"
 if (-not $OwnerApproved) { throw "This writes (and removes) a test calendar on the real Nextcloud: run again with -OwnerApproved after the owner has said yes." }
 . "$PSScriptRoot\..\spike\Cred.ps1"
@@ -26,7 +30,8 @@ $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 Push-Location (Join-Path $PSScriptRoot "..\android")
 try {
     # -Series runs the repeating-events cycle (phase 4) instead of the plain-event cycle (phase 3)
-    $testClass = if ($Series) { "dev.bookah.calendar.data.LiveSeriesTest" } else { "dev.bookah.calendar.data.LiveWriteTest" }
+    # -Tasks runs the task tick and undo cycle (phase 4, tasks slice 2)
+    $testClass = if ($Tasks) { "dev.bookah.calendar.data.LiveTaskTest" } elseif ($Series) { "dev.bookah.calendar.data.LiveSeriesTest" } else { "dev.bookah.calendar.data.LiveWriteTest" }
     & .\gradlew.bat --no-daemon :core-data:testDebugUnitTest --tests $testClass -i 2>&1 | Select-String -Pattern "^\s*LIVE |FAILED|BUILD (SUCCESSFUL|FAILED)|AssertionError" | ForEach-Object { $_.Line.Trim() }
     Write-Host "gradle exit code: $LASTEXITCODE"
 } finally {

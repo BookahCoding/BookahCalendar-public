@@ -48,7 +48,7 @@ import java.util.Locale
 /** Schedule: a vertical list of days; each day has a date column and full-width event cards (docs/design-spec.md 2.4). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(state: UiState, onMenu: () -> Unit, onRefresh: () -> Unit, onOpenEvent: (Instance) -> Unit, onOpenTask: (TaskItem) -> Unit) {
+fun ScheduleScreen(state: UiState, onMenu: () -> Unit, onRefresh: () -> Unit, onOpenEvent: (Instance) -> Unit, onOpenTask: (TaskItem) -> Unit, onTick: (TaskItem) -> Unit = {}) {
     val zone = remember { ZoneId.systemDefault() }
     // follows the clock: back in the app the next morning, today's pill and "late" move on
     val today = rememberToday(zone)
@@ -72,7 +72,7 @@ fun ScheduleScreen(state: UiState, onMenu: () -> Unit, onRefresh: () -> Unit, on
                 Text(stringResource(R.string.no_calendars), Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             LazyColumn(Modifier.fillMaxSize(), list, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(state.days, key = { it.date.toEpochDay() }) { day -> DayRow(day, today, now, colors, zone, onOpenEvent, onOpenTask, state.weather[day.date.toString()]) }
+                items(state.days, key = { it.date.toEpochDay() }) { day -> DayRow(day, today, now, colors, zone, onOpenEvent, onOpenTask, state.weather[day.date.toString()], state, onTick) }
             }
         }
     }
@@ -93,7 +93,7 @@ fun SyncStatusLine(state: UiState) {
 @Composable
 private fun DayRow(
     day: DayItems, today: LocalDate, now: Long, calendars: Map<Long, CalendarInfo>, zone: ZoneId, onOpenEvent: (Instance) -> Unit, onOpenTask: (TaskItem) -> Unit,
-    weather: dev.bookah.calendar.data.DayWeather?,
+    weather: dev.bookah.calendar.data.DayWeather?, state: UiState, onTick: (TaskItem) -> Unit,
 ) {
     val isToday = day.date == today
     Column {
@@ -119,9 +119,9 @@ private fun DayRow(
                     Text(stringResource(R.string.quiet_day), Modifier.padding(top = 10.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
                 for (e in day.events) EventCard(e, calendars[e.calendarId], day.date, zone) { onOpenEvent(e) }
-                // the day's open tasks as quiet lines under its events (read-only: a tap opens the task page)
+                // the day's open tasks as quiet lines under its events: the round mark ticks a plain task, the rest of the row opens the task page
                 if (day.tasks.isNotEmpty()) Column {
-                    for (t in day.tasks) TaskRow(t, calendars[t.calendarId], zone, now, today, { onOpenTask(t) })
+                    for (t in day.tasks) androidx.compose.runtime.key(t.key) { TickableTaskRow(t, calendars[t.calendarId], zone, now, today, state, { onOpenTask(t) }, { onTick(t) }) }
                 }
             }
         }

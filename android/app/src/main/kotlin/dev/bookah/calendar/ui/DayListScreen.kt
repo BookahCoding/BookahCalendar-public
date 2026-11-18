@@ -30,7 +30,7 @@ import java.util.Locale
  * Back (the arrow or the system gesture) returns to Month.
  */
 @Composable
-fun DayListScreen(date: LocalDate, state: UiState, onBack: () -> Unit, onOpenEvent: (Instance) -> Unit, onOpenTask: (TaskItem) -> Unit = {}) {
+fun DayListScreen(date: LocalDate, state: UiState, onBack: () -> Unit, onOpenEvent: (Instance) -> Unit, onOpenTask: (TaskItem) -> Unit = {}, onTick: (TaskItem) -> Unit = {}) {
     val zone = remember { ZoneId.systemDefault() }
     val today = rememberToday(zone)
     val now = remember(state.days, today) { System.currentTimeMillis() }
@@ -44,7 +44,7 @@ fun DayListScreen(date: LocalDate, state: UiState, onBack: () -> Unit, onOpenEve
         }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(events, key = { "event|" + it.key }) { e -> EventCard(e, colors[e.calendarId], date, zone) { onOpenEvent(e) } }
-            items(tasks, key = { it.key }) { t -> TaskRow(t, colors[t.calendarId], zone, now, today, { onOpenTask(t) }) }
+            items(tasks, key = { it.key }) { t -> TickableTaskRow(t, colors[t.calendarId], zone, now, today, state, { onOpenTask(t) }, { onTick(t) }) }
         }
     }
 }

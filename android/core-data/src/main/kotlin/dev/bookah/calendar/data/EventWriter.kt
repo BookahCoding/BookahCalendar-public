@@ -202,7 +202,7 @@ class EventWriter(
     /** Null when the calendar of this object may be written to at all (a writable Nextcloud calendar). */
     private fun calendarRefusal(obj: StoredObject): WriteResult.Refused? {
         val calendar = store.calendars().firstOrNull { it.id == obj.calendarId }
-        // a task-only list is never written by this app (its items are tasks, which only BookahTasks changes)
+        // a task-only list never gets an event write (its items are tasks; their tick goes through TaskWriter, everything else is BookahTasks')
         return if (calendar == null || calendar.source != Source.Nextcloud || !calendar.editable || !calendar.kind.holdsEvents) WriteResult.Refused("This calendar cannot be changed.") else null
     }
 

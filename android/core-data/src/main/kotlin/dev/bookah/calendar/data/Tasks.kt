@@ -14,8 +14,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * One Nextcloud task (VTODO) as the calendar shows it: read-only (BookahCalendar never writes tasks; BookahTasks does, and only
- * BookahTasks rings for them). Times are UTC milliseconds like [Instance]: a date-only value is UTC midnight of its date
+ * One Nextcloud task (VTODO) as the calendar shows it. The only write this app makes to a task is the tick of a plain one and its undo
+ * ([TaskWriter]); everything else is changed in BookahTasks, and only BookahTasks rings for tasks. Times are UTC milliseconds like [Instance]: a date-only value is UTC midnight of its date
  * ([startAllDay] / [dueAllDay] tell the screens to read it as a date).
  */
 data class TaskItem(

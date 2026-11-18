@@ -66,7 +66,7 @@ data class UiState(
     val openDay: LocalDate? = null,
     /** Set when an event was tapped: its read-only sheet is open. */
     val openEvent: Instance? = null,
-    /** Set when a task was tapped: its read-only page is open (tasks are changed in BookahTasks, never here). */
+    /** Set when a task was tapped: its page is open (a plain task can be ticked there; every other change is made in BookahTasks). */
     val openTask: TaskItem? = null,
     /** The Tasks page (open tasks without a date, by list) is open. */
     val tasksOpen: Boolean = false,
@@ -107,6 +107,12 @@ data class UiState(
     val conflict: PendingWrite? = null,
     /** A short message the user has to acknowledge (for example: the event was deleted elsewhere). */
     val notice: UiText? = null,
+    /** Whether each open task of the shown lists can be ticked here, by task key (see [taskEditabilities]). */
+    val taskEditability: Map<String, dev.bookah.calendar.data.TaskEditability> = emptyMap(),
+    /** The key of the task whose tick is being saved, or [UNDO_SAVING] while an undo is; null when no task write runs. */
+    val taskSaving: String? = null,
+    /** The bar at the bottom: "Task done · Undo", or what went wrong with a tick or an undo. */
+    val taskBar: TaskBar? = null,
 ) {
     /** The events of one day, or none if it is outside the loaded window. */
     fun dayAt(date: LocalDate): DayItems? {
@@ -117,6 +123,9 @@ data class UiState(
 }
 
 enum class ViewMode { Schedule, Month, Day, ThreeDays, Week }
+
+/** [UiState.taskSaving] while an undo of a tick is being saved. */
+const val UNDO_SAVING = "undo"
 
 /** Numbers measured on the device itself, shown in Settings (design target: events ready within 1 s of the process start). */
 data class Speed(val coldStartMs: Long? = null, val expandMs: Long? = null, val syncMs: Long? = null)
@@ -423,10 +432,59 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
         }
     }
 
+    // ------------------------------------------------------------------------------------------ ticking tasks (online only, no outbox)
+
+    private val taskGate = WriteGate()
+    private var barCounter = 0L
+
+    /**
+     * The checkbox of a task (or "Mark done" on its page). A task that cannot be ticked here (repeating, open subtasks, read-only list ...) opens
+     * its page instead, which says why. One write at a time.
+     */
+    fun tickTask(t: TaskItem) {
+        if (_state.value.taskEditability[t.key] != dev.bookah.calendar.data.TaskEditability.Editable) { openTask(t); return }
+        // a new tick replaces the bar of an earlier one: only the latest tick can be undone (decision recorded in HANDOFF)
+        runTaskWrite(t.objectHref, undo = false, savingKey = t.key) { it.complete(t.objectHref) }
+    }
+
+    /** "Undo" on the bar: puts the task back as it was before the tick, only if it is still the version the tick wrote (otherwise it says so). */
+    fun undoTaskDone() {
+        val done = _state.value.taskBar as? TaskBar.Done ?: return
+        runTaskWrite(done.href, undo = true, savingKey = UNDO_SAVING) { it.reopen(done.href, done.etag, done.before) }
+    }
+
+    /**
+     * Runs one task write: off the main thread, under the sync lock, one at a time. The days are loaded again BEFORE the bar appears and the gate
+     * opens, all in one step: so the row is gone when "Undo" shows, an Undo tapped on the bar is never swallowed by a gate still closed, and a
+     * second tap on the vanishing row finds the gate closed. "May have been saved" starts a refresh so the phone learns the server's version.
+     */
+    private fun runTaskWrite(href: String, undo: Boolean, savingKey: String, action: suspend (dev.bookah.calendar.data.TaskWriter) -> dev.bookah.calendar.data.TaskWriteResult) {
+        val s = session ?: return
+        if (_state.value.saving || !taskGate.tryEnter()) return
+        _state.update { it.copy(taskSaving = savingKey, taskBar = null) }
+        viewModelScope.launch {
+            var after: AfterTaskWrite? = null
+            try {
+                val result = io { graph.syncLock.withLock { action(dev.bookah.calendar.data.TaskWriter(graph.store, graph.apiFactory(s))) } }
+                reload()
+                val a = afterTaskWrite(result, undo, href, _state.value.openTask?.objectHref, ++barCounter)
+                after = a
+                _state.update { st -> st.copy(taskSaving = null, taskBar = a.bar, openTask = if (a.closePage) null else st.openTask) }
+            } finally {
+                if (after == null) _state.update { it.copy(taskSaving = null) }
+                taskGate.leave()
+            }
+            if (after?.refresh == true) refresh()
+        }
+    }
+
+    /** The bar's time is up (or OK was tapped). A newer bar is left alone. */
+    fun dismissTaskBar(id: Long) = _state.update { if (it.taskBar?.id == id) it.copy(taskBar = null) else it }
+
     /** One write at a time, never in the middle of a sync, off the main thread. */
     private fun runWrite(pending: PendingWrite?, action: suspend (EventWriter) -> WriteResult) {
         val s = session ?: return
-        if (_state.value.saving) return
+        if (_state.value.saving || _state.value.taskSaving != null) return
         _state.update { it.copy(saving = true, saveError = null) }
         viewModelScope.launch {
             val result = io { graph.syncLock.withLock { action(EventWriter(graph.store, graph.apiFactory(s))) } }
@@ -452,7 +510,8 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
             graph.sessions.clear()
             // the encrypted feed addresses go too: the next sign-in must not bring a secret address back silently
             feedLock.withLock { graph.feeds.save(emptyList()) }
-            graph.store.clearAll()
+            // under the sync lock: a write or sync still running finishes first and cannot refill the cache after it was cleared
+            graph.syncLock.withLock { graph.store.clearAll() }
             session = null
             _state.value = UiState(phase = Phase.SignedOut, prefs = _state.value.prefs)   // the look is not account data
         }
@@ -465,7 +524,10 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
         val to = today.plusMonths(13).withDayOfMonth(1)
         loadedVersion = graph.store.version()
         val startedAt = SystemClock.elapsedRealtime()
-        class Loaded(val cals: List<CalendarInfo>, val days: List<DayItems>, val hidden: Int, val tasks: List<TaskItem>, val undated: List<TaskItem>)
+        class Loaded(
+            val cals: List<CalendarInfo>, val days: List<DayItems>, val hidden: Int, val tasks: List<TaskItem>, val undated: List<TaskItem>,
+            val tickable: Map<String, dev.bookah.calendar.data.TaskEditability>,
+        )
         val loaded = withContext(Dispatchers.Default) {
             val cals = graph.store.calendars()
             val shown = cals.filter { it.visible }.associateBy { it.id }
@@ -485,7 +547,9 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
                 .map { ObjectSource(it.calendarId, it.href, it.ics, it.href + "|" + it.etag, readOnly = true) }
             graph.taskReader.retainOnly(taskSources.map { it.cacheKey }.toSet())
             val tasks = graph.taskReader.read(taskSources, zone)
-            Loaded(cals, attachTasks(groupByDay(instances, from, to, zone), groupTasksByDay(tasks, from, to, zone, java.time.LocalDate.now(zone))), hidden, tasks, undatedTasks(tasks))
+            // which open tasks get a working checkbox (judged here, off the main thread, not per row while drawing)
+            val tickable = taskEditabilities(tasks, all.filter { it.calendarId in taskLists }.associateBy { it.href }, cals.associateBy { it.id })
+            Loaded(cals, attachTasks(groupByDay(instances, from, to, zone), groupTasksByDay(tasks, from, to, zone, java.time.LocalDate.now(zone))), hidden, tasks, undatedTasks(tasks), tickable)
         }
         val feeds = graph.feeds.load().map { FeedInfo(it.id, it.name) }
         val now = SystemClock.elapsedRealtime()
@@ -494,7 +558,7 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
             val cold = it.speed.coldStartMs ?: if (recordCold && loaded.days.any { d -> d.events.isNotEmpty() }) now - BookahApp.screenCreatedAt else null
             it.copy(
                 calendars = loaded.cals, days = loaded.days, hiddenDuplicates = loaded.hidden, feeds = feeds,
-                allTasks = loaded.tasks, undatedTasks = loaded.undated,
+                allTasks = loaded.tasks, undatedTasks = loaded.undated, taskEditability = loaded.tickable,
                 // an open task page shows the newest reading of that task (it stays as it was if the task is gone)
                 openTask = it.openTask?.let { o -> loaded.tasks.firstOrNull { t -> t.key == o.key } ?: o },
                 speed = it.speed.copy(coldStartMs = cold, expandMs = now - startedAt),

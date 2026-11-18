@@ -14,8 +14,13 @@ import java.time.ZoneOffset
 internal class FakeCalendarServer : CalDavApi {
     val objects = LinkedHashMap<String, RemoteObject>()
     var counter = 0
+    /** The server cannot be reached: the request never leaves the phone (a connect failure). */
     var offline = false
     var omitEtag = false
+    /** The write is done on the server, but its answer never arrives (a read timeout). */
+    var loseAnswer = false
+    /** A read-back finds nothing (as if the server had not stored it yet). */
+    var getFindsNothing = false
     val log = ArrayList<String>()
 
     override suspend fun listCalendars() = emptyList<RemoteCalendar>()
@@ -24,25 +29,26 @@ internal class FakeCalendarServer : CalDavApi {
 
     override suspend fun put(objectHref: String, ics: String, ifMatch: String?): PutResult {
         log += "PUT ${if (ifMatch == null) "If-None-Match:*" else "If-Match"}"
-        if (offline) throw IOException("offline")
+        if (offline) throw java.net.ConnectException("offline")
         val existing = objects[objectHref]
         if (ifMatch == null && existing != null) throw PreconditionFailedException()
         if (ifMatch != null && existing == null) throw CalDavException(404, "gone")
         if (ifMatch != null && existing!!.etag != ifMatch) throw PreconditionFailedException()
         val etag = "e${++counter}"
         objects[objectHref] = RemoteObject(objectHref, etag, ics)
+        if (loseAnswer) throw java.net.SocketTimeoutException("timeout")
         return PutResult(if (omitEtag) null else etag)
     }
 
     override suspend fun delete(objectHref: String, ifMatch: String) {
         log += "DELETE"
-        if (offline) throw IOException("offline")
+        if (offline) throw java.net.ConnectException("offline")
         val existing = objects[objectHref] ?: throw CalDavException(404, "gone")
         if (existing.etag != ifMatch) throw PreconditionFailedException()
         objects.remove(objectHref)
     }
 
-    override suspend fun get(objectHref: String) = objects[objectHref]
+    override suspend fun get(objectHref: String) = if (getFindsNothing) null else objects[objectHref]
 }
 
 class EventWriterTest {

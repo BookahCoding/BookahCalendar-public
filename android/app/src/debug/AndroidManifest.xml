@@ -6,6 +6,7 @@
             <intent-filter>
                 <action android:name="dev.bookah.calendar.SEED" />
                 <action android:name="dev.bookah.calendar.TOUCH" />
+                <action android:name="dev.bookah.calendar.FAKE_OFFLINE" />
             </intent-filter>
         </receiver>
     </application>
