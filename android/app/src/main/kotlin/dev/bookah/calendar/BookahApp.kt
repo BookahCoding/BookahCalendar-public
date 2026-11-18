@@ -23,6 +23,8 @@ class AppGraph(context: Context) {
     /** How the app talks to the server. Debug builds can swap in an in-memory fake for emulator tests; release builds never do. */
     @Volatile var apiFactory: (dev.bookah.calendar.data.Session) -> dev.bookah.calendar.data.CalDavApi = { dev.bookah.calendar.data.CalDavClient(http, it) }
     val expander = Expander()
+    /** Reads the tasks of task lists for display only (they never reach the reminders below: only BookahTasks rings for tasks). */
+    val taskReader = dev.bookah.calendar.data.TaskReader()
     val sync = SyncEngine(store)
     /** One feed change or sync at a time, whether it comes from the screen or from the background worker. */
     val feedLock = kotlinx.coroutines.sync.Mutex()
@@ -42,11 +44,9 @@ class AppGraph(context: Context) {
     suspend fun rescheduleReminders() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
         val now = System.currentTimeMillis()
         val cals = store.calendars()
-        val shown = cals.filter { it.visible }.associateBy { it.id }
         val (usable, _) = dropGoogleDuplicates(store.allObjects(), cals)
-        val sources = usable.filter { it.calendarId in shown }.map {
-            dev.bookah.calendar.data.ObjectSource(it.calendarId, it.href, it.ics, it.href + "|" + it.etag, readOnly = shown.getValue(it.calendarId).editable.not())
-        }
+        // shown calendars that hold events; task-only lists are left out entirely: only BookahTasks rings for tasks
+        val sources = eventSources(usable, cals)
         val instances = expander.expand(sources, now - 86_400_000L, now + (AlarmPlanner.HORIZON_DAYS + 1) * 86_400_000L)
         ReminderScheduler(appContext).reschedule(AlarmPlanner.plan(instances, now, java.time.ZoneId.systemDefault()))
     }

@@ -27,6 +27,7 @@ import dev.bookah.calendar.data.ReadOnlyReason
 import dev.bookah.calendar.data.Session
 import dev.bookah.calendar.data.Source
 import dev.bookah.calendar.data.SyncReport
+import dev.bookah.calendar.data.TaskItem
 import dev.bookah.calendar.data.WriteResult
 import dev.bookah.calendar.data.normalizeServerAddress
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +66,14 @@ data class UiState(
     val openDay: LocalDate? = null,
     /** Set when an event was tapped: its read-only sheet is open. */
     val openEvent: Instance? = null,
+    /** Set when a task was tapped: its read-only page is open (tasks are changed in BookahTasks, never here). */
+    val openTask: TaskItem? = null,
+    /** The Tasks page (open tasks without a date, by list) is open. */
+    val tasksOpen: Boolean = false,
+    /** Open tasks without any date from the shown task lists, by list then title. */
+    val undatedTasks: List<TaskItem> = emptyList(),
+    /** Every task (open or finished) of the shown task lists: the task page looks up a subtask's parent here. */
+    val allTasks: List<TaskItem> = emptyList(),
     val settingsOpen: Boolean = false,
     /** The search page is open. */
     val searchOpen: Boolean = false,
@@ -333,17 +342,21 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
         }
     }
 
-    fun showView(mode: ViewMode) = _state.update { it.copy(view = mode, openDay = null, openEvent = null) }
+    fun showView(mode: ViewMode) = _state.update { it.copy(view = mode, openDay = null, openEvent = null, openTask = null, tasksOpen = false) }
     fun openDay(date: LocalDate?) = _state.update { it.copy(openDay = date) }
     fun openEvent(event: Instance?) = _state.update { it.copy(openEvent = event) }
+    fun openTask(task: TaskItem?) = _state.update { it.copy(openTask = task) }
+    fun openTasks(open: Boolean) = _state.update { it.copy(tasksOpen = open, openDay = null) }
 
-    /** Back closes the topmost thing: event sheet, then day page. Returns false when there is nothing to close. */
+    /** Back closes the topmost thing: task or event page, search, settings, the Tasks page, then the day page. Returns false when there is nothing to close. */
     fun back(): Boolean {
         val s = _state.value
         return when {
+            s.openTask != null -> { openTask(null); true }
             s.openEvent != null -> { openEvent(null); true }
             s.searchOpen -> { openSearch(false); true }
             s.settingsOpen -> { openSettings(false); true }
+            s.tasksOpen -> { openTasks(false); true }
             s.openDay != null -> { openDay(null); true }
             else -> false
         }
@@ -452,28 +465,38 @@ class AppViewModel(private val graph: AppGraph) : ViewModel() {
         val to = today.plusMonths(13).withDayOfMonth(1)
         loadedVersion = graph.store.version()
         val startedAt = SystemClock.elapsedRealtime()
+        class Loaded(val cals: List<CalendarInfo>, val days: List<DayItems>, val hidden: Int, val tasks: List<TaskItem>, val undated: List<TaskItem>)
         val loaded = withContext(Dispatchers.Default) {
             val cals = graph.store.calendars()
             val shown = cals.filter { it.visible }.associateBy { it.id }
+            val all = graph.store.allObjects()
             // a Google event that Nextcloud already has is left out (checked over all Nextcloud calendars, shown or not)
-            val (usable, hidden) = dropGoogleDuplicates(graph.store.allObjects(), cals)
-            val sources = usable.filter { it.calendarId in shown }.map {
-                ObjectSource(it.calendarId, it.href, it.ics, it.href + "|" + it.etag, readOnly = shown.getValue(it.calendarId).editable.not())
-            }
+            val (usable, hidden) = dropGoogleDuplicates(all, cals)
+            // events come only from shown lists that hold events: a task-only list never reaches the expander (nor the reminders)
+            val sources = eventSources(usable, cals)
             graph.expander.retainOnly(sources.map { it.cacheKey }.toSet())
             val fromMs = from.atStartOfDay(zone).toInstant().toEpochMilli()
             val toMs = to.atStartOfDay(zone).toInstant().toEpochMilli()
             // all-day events are stored as UTC dates, so widen the range by a day on both sides, then place them on days
             val instances = graph.expander.expand(sources, fromMs - 86_400_000L, toMs + 86_400_000L)
-            Triple(cals, groupByDay(instances, from, to, zone), hidden)
+            // the tasks of shown Nextcloud lists that hold tasks (read-only; never handed to the reminders)
+            val taskLists = shown.values.filter { it.source == Source.Nextcloud && it.kind.holdsTasks }.map { it.id }.toSet()
+            val taskSources = all.filter { it.calendarId in taskLists && it.ics.contains("BEGIN:VTODO", ignoreCase = true) }
+                .map { ObjectSource(it.calendarId, it.href, it.ics, it.href + "|" + it.etag, readOnly = true) }
+            graph.taskReader.retainOnly(taskSources.map { it.cacheKey }.toSet())
+            val tasks = graph.taskReader.read(taskSources, zone)
+            Loaded(cals, attachTasks(groupByDay(instances, from, to, zone), groupTasksByDay(tasks, from, to, zone, java.time.LocalDate.now(zone))), hidden, tasks, undatedTasks(tasks))
         }
         val feeds = graph.feeds.load().map { FeedInfo(it.id, it.name) }
         val now = SystemClock.elapsedRealtime()
         _state.update {
             // "screen created to events ready" is recorded once, for the first load that has events (a cold start)
-            val cold = it.speed.coldStartMs ?: if (recordCold && loaded.second.any { d -> d.events.isNotEmpty() }) now - BookahApp.screenCreatedAt else null
+            val cold = it.speed.coldStartMs ?: if (recordCold && loaded.days.any { d -> d.events.isNotEmpty() }) now - BookahApp.screenCreatedAt else null
             it.copy(
-                calendars = loaded.first, days = loaded.second, hiddenDuplicates = loaded.third, feeds = feeds,
+                calendars = loaded.cals, days = loaded.days, hiddenDuplicates = loaded.hidden, feeds = feeds,
+                allTasks = loaded.tasks, undatedTasks = loaded.undated,
+                // an open task page shows the newest reading of that task (it stays as it was if the task is gone)
+                openTask = it.openTask?.let { o -> loaded.tasks.firstOrNull { t -> t.key == o.key } ?: o },
                 speed = it.speed.copy(coldStartMs = cold, expandMs = now - startedAt),
             )
         }

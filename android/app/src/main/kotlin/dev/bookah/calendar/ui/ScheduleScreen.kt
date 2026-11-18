@@ -39,6 +39,7 @@ import dev.bookah.calendar.R
 import dev.bookah.calendar.UiState
 import dev.bookah.calendar.data.CalendarInfo
 import dev.bookah.calendar.data.Instance
+import dev.bookah.calendar.data.TaskItem
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -47,9 +48,12 @@ import java.util.Locale
 /** Schedule: a vertical list of days; each day has a date column and full-width event cards (docs/design-spec.md 2.4). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(state: UiState, onMenu: () -> Unit, onRefresh: () -> Unit, onOpenEvent: (Instance) -> Unit) {
+fun ScheduleScreen(state: UiState, onMenu: () -> Unit, onRefresh: () -> Unit, onOpenEvent: (Instance) -> Unit, onOpenTask: (TaskItem) -> Unit) {
     val zone = remember { ZoneId.systemDefault() }
-    val today = remember { LocalDate.now(zone) }
+    // follows the clock: back in the app the next morning, today's pill and "late" move on
+    val today = rememberToday(zone)
+    // "late" for a task is judged against this moment (recomputed whenever the days are loaded again or the date changes)
+    val now = remember(state.days, today) { System.currentTimeMillis() }
     val colors = remember(state.calendars) { state.calendars.associateBy { it.id } }
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -68,7 +72,7 @@ fun ScheduleScreen(state: UiState, onMenu: () -> Unit, onRefresh: () -> Unit, on
                 Text(stringResource(R.string.no_calendars), Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             LazyColumn(Modifier.fillMaxSize(), list, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(state.days, key = { it.date.toEpochDay() }) { day -> DayRow(day, today, colors, zone, onOpenEvent, state.weather[day.date.toString()]) }
+                items(state.days, key = { it.date.toEpochDay() }) { day -> DayRow(day, today, now, colors, zone, onOpenEvent, onOpenTask, state.weather[day.date.toString()]) }
             }
         }
     }
@@ -87,7 +91,10 @@ fun SyncStatusLine(state: UiState) {
 }
 
 @Composable
-private fun DayRow(day: DayItems, today: LocalDate, calendars: Map<Long, CalendarInfo>, zone: ZoneId, onOpenEvent: (Instance) -> Unit, weather: dev.bookah.calendar.data.DayWeather?) {
+private fun DayRow(
+    day: DayItems, today: LocalDate, now: Long, calendars: Map<Long, CalendarInfo>, zone: ZoneId, onOpenEvent: (Instance) -> Unit, onOpenTask: (TaskItem) -> Unit,
+    weather: dev.bookah.calendar.data.DayWeather?,
+) {
     val isToday = day.date == today
     Column {
         if (day.date.dayOfMonth == 1) {
@@ -108,10 +115,14 @@ private fun DayRow(day: DayItems, today: LocalDate, calendars: Map<Long, Calenda
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (day.events.isEmpty()) {
+                if (day.events.isEmpty() && day.tasks.isEmpty()) {
                     Text(stringResource(R.string.quiet_day), Modifier.padding(top = 10.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
                 for (e in day.events) EventCard(e, calendars[e.calendarId], day.date, zone) { onOpenEvent(e) }
+                // the day's open tasks as quiet lines under its events (read-only: a tap opens the task page)
+                if (day.tasks.isNotEmpty()) Column {
+                    for (t in day.tasks) TaskRow(t, calendars[t.calendarId], zone, now, today, { onOpenTask(t) })
+                }
             }
         }
     }

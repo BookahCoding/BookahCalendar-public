@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import dev.bookah.calendar.R
 import dev.bookah.calendar.UiState
 import dev.bookah.calendar.ViewMode
+import dev.bookah.calendar.data.ListKind
 import dev.bookah.calendar.data.Source
 import dev.bookah.calendar.design.ChipColor
 
@@ -30,7 +31,9 @@ import dev.bookah.calendar.design.ChipColor
  * Day, 3 days and Week are shown but not available until Phase 2. The footer opens Settings (account, feeds).
  */
 @Composable
-fun AppDrawer(state: UiState, onView: (ViewMode) -> Unit, onRefresh: () -> Unit, onToggle: (Long, Boolean) -> Unit, onSettings: () -> Unit) {
+fun AppDrawer(
+    state: UiState, onView: (ViewMode) -> Unit, onRefresh: () -> Unit, onToggle: (Long, Boolean) -> Unit, onSettings: () -> Unit, onTasks: () -> Unit = {},
+) {
     ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 12.dp)) {
             // our name on a strip of the month's artwork (docs/design-spec.md 2.5)
@@ -40,13 +43,25 @@ fun AppDrawer(state: UiState, onView: (ViewMode) -> Unit, onRefresh: () -> Unit,
                 ViewMode.Schedule to R.string.view_schedule, ViewMode.Day to R.string.view_day, ViewMode.ThreeDays to R.string.view_3days,
                 ViewMode.Week to R.string.view_week, ViewMode.Month to R.string.view_month,
             )) {
-                NavigationDrawerItem({ Text(stringResource(label)) }, state.view == mode, { onView(mode) }, Modifier.padding(horizontal = 12.dp))
+                NavigationDrawerItem({ Text(stringResource(label)) }, state.view == mode && !state.tasksOpen, { onView(mode) }, Modifier.padding(horizontal = 12.dp))
+            }
+            // the Tasks page (open tasks without a date); the number is how many it lists. Only when the server has lists that hold tasks.
+            if (state.calendars.any { it.source == Source.Nextcloud && it.kind.holdsTasks }) {
+                NavigationDrawerItem(
+                    { Text(stringResource(R.string.drawer_tasks)) }, state.tasksOpen, onTasks, Modifier.padding(horizontal = 12.dp),
+                    badge = { if (state.undatedTasks.isNotEmpty()) Text(state.undatedTasks.size.toString()) },
+                )
             }
             NavigationDrawerItem({ Text(stringResource(R.string.action_refresh)) }, false, onRefresh, Modifier.padding(horizontal = 12.dp))
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            for ((source, label) in listOf(Source.Nextcloud to R.string.source_nextcloud, Source.Google to R.string.source_google)) {
-                val group = state.calendars.filter { it.source == source }
+            // event calendars (a list that holds both events and tasks stays here: its one switch shows or hides both), then task-only lists
+            val groups = listOf(
+                R.string.source_nextcloud to state.calendars.filter { it.source == Source.Nextcloud && it.kind != ListKind.Tasks },
+                R.string.source_task_lists to state.calendars.filter { it.source == Source.Nextcloud && it.kind == ListKind.Tasks },
+                R.string.source_google to state.calendars.filter { it.source == Source.Google },
+            )
+            for ((label, group) in groups) {
                 if (group.isEmpty()) continue
                 Text(stringResource(label), Modifier.padding(horizontal = 28.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 for (cal in group) {

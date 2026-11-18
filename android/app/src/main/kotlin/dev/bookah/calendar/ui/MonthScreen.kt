@@ -126,9 +126,12 @@ private fun DayTile(
 ) {
     val t = LocalThemeColors.current
     val events = state.dayAt(date)?.events.orEmpty()
-    // what a screen reader says for the tile: the date and how many events, not the chips one by one (they are on the day page)
+    val tasks = state.dayAt(date)?.tasks.orEmpty()
+    // what a screen reader says for the tile: the date and how many events and tasks, not the chips one by one (they are on the day page)
     val spoken = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.FULL).format(date).let { d ->
-        if (events.isEmpty()) stringResource(R.string.month_tile_empty, d) else androidx.compose.ui.res.pluralStringResource(R.plurals.month_tile_events, events.size, d, events.size)
+        val ev = if (events.isEmpty() && tasks.isNotEmpty()) d
+            else if (events.isEmpty()) stringResource(R.string.month_tile_empty, d) else androidx.compose.ui.res.pluralStringResource(R.plurals.month_tile_events, events.size, d, events.size)
+        if (tasks.isEmpty()) ev else ev + ", " + androidx.compose.ui.res.pluralStringResource(R.plurals.month_tile_tasks, tasks.size, tasks.size)
     }
     Column(
         modifier.fillMaxSize().padding(1.5.dp).clip(RoundedCornerShape(12.dp))
@@ -147,9 +150,10 @@ private fun DayTile(
                 color = when { isToday -> MaterialTheme.colorScheme.onPrimary; inMonth -> MaterialTheme.colorScheme.onBackground; else -> t.textMuted.copy(alpha = 0.6f) },
             )
         }
-        // with too many events the last line says "+N" instead of showing one more chip
-        val overflow = events.size > lines
-        val shownChips = if (overflow) (lines - 1).coerceAtLeast(0) else events.size
+        // with too many events and tasks the last line says "+N" instead of showing one more chip; events come first, then tasks
+        val total = events.size + tasks.size
+        val overflow = total > lines
+        val shownChips = if (overflow) (lines - 1).coerceAtLeast(0) else total
         for (e in events.take(shownChips)) {
             val chip = eventChipColor(e, colors[e.calendarId])
             // read-only events (feeds) get a hairline outline and a small lock (docs/design-spec.md 3.3)
@@ -158,12 +162,24 @@ private fun DayTile(
                 Modifier.fillMaxWidth().height(CHIP_HEIGHT).clip(RoundedCornerShape(4.dp)).background(chip.fill).then(outline).padding(horizontal = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(e.title, Modifier.weight(1f), color = chip.text, fontSize = 11.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Clip)
+                Text(e.title.ifBlank { stringResource(R.string.no_title) }, Modifier.weight(1f), color = chip.text, fontSize = 11.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Clip)
                 if (e.readOnly) Icon(Icons.Default.Lock, stringResource(R.string.lock_description), Modifier.size(9.dp), tint = chip.text)
             }
         }
+        // a task chip: the list's colour with the round task mark in front of the title
+        for (t in tasks.take((shownChips - events.size).coerceAtLeast(0))) {
+            val chip = ChipColor.forCalendar(taskListColor(colors[t.calendarId]))
+            Row(
+                Modifier.fillMaxWidth().height(CHIP_HEIGHT).clip(RoundedCornerShape(4.dp)).background(chip.fill).padding(horizontal = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TaskGlyph(chip.text, 8.dp, described = false)
+                androidx.compose.foundation.layout.Spacer(Modifier.size(2.dp))
+                Text(t.title.ifBlank { stringResource(R.string.no_title) }, Modifier.weight(1f), color = chip.text, fontSize = 11.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Clip)
+            }
+        }
         if (overflow && lines > 0) {
-            Text(stringResource(R.string.more_events, events.size - shownChips), fontSize = 11.sp, lineHeight = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.more_events, total - shownChips), fontSize = 11.sp, lineHeight = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

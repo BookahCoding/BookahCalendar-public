@@ -51,6 +51,21 @@ class AlarmPlannerTest {
         assertEquals(a.key, moved.key)
     }
 
+    /**
+     * Guard: a task's own reminder (VALARM inside a VTODO) must never ring in BookahCalendar; only BookahTasks rings for tasks. The expander reads
+     * only events, so a task gives no occurrence and no reminder. (Written as a guard: it passes because the existing code already behaves.)
+     */
+    @Test fun aTaskWithAReminderNeverBecomesAnAlarm() {
+        val inAnHour = java.time.Instant.ofEpochMilli(now + hour).atOffset(ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))
+        val task = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:task@invalid\r\nDTSTAMP:20261101T000000Z\r\nDTSTART:$inAnHour\r\nDUE:$inAnHour\r\n" +
+            "SUMMARY:Generated task\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:r\r\nTRIGGER:-PT15M\r\nEND:VALARM\r\nEND:VTODO\r\nEND:VCALENDAR\r\n"
+        val instances = dev.bookah.calendar.data.Expander().expand(
+            listOf(dev.bookah.calendar.data.ObjectSource(1, "/c/t/task.ics", task, "k", readOnly = true)), now - day, now + 15 * day,
+        )
+        assertTrue(instances.isEmpty())
+        assertTrue(AlarmPlanner.plan(instances, now, athens).isEmpty())
+    }
+
     @Test fun anAllDayEventCountsFromMidnightInThePhonesZone() {
         val tomorrow = LocalDate.of(2026, 11, 16)
         val utcMidnight = tomorrow.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()

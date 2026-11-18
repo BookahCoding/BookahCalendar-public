@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
                 val drawer = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 // Back closes the topmost thing: the drawer, then the event sheet, then the day page; otherwise the system leaves the app.
-                BackHandler(enabled = drawer.isOpen || state.openEvent != null || state.settingsOpen || state.searchOpen || state.openDay != null) {
+                BackHandler(enabled = drawer.isOpen || state.openTask != null || state.openEvent != null || state.settingsOpen || state.searchOpen || state.tasksOpen || state.openDay != null) {
                     if (drawer.isOpen) scope.launch { drawer.close() } else model.back()
                 }
                 // a Surface sets the default text and icon colour for everything inside (otherwise black text on a dark page)
@@ -75,30 +75,34 @@ class MainActivity : ComponentActivity() {
                                     onRefresh = { model.refresh(); scope.launch { drawer.close() } },
                                     onToggle = model::setCalendarVisible,
                                     onSettings = { model.openSettings(true); scope.launch { drawer.close() } },
+                                    onTasks = { model.openTasks(true); scope.launch { drawer.close() } },
                                 )
                             },
                             drawerState = drawer,
-                            gesturesEnabled = state.openDay == null,
+                            gesturesEnabled = state.openDay == null && !state.tasksOpen,
                         ) {
                             val openDay = state.openDay
                             when {
                                 state.searchOpen -> SearchScreen(state, onBack = { model.openSearch(false) }, onOpenEvent = model::openEvent)
                                 state.settingsOpen -> SettingsScreen(state, onBack = { model.openSettings(false) }, onAddFeed = model::addFeed, onRemoveFeed = model::removeFeed, onSignOut = model::signOut, onTheme = model::setTheme, onAppearance = model::setAppearance, onPureBlack = model::setPureBlack, onWeekStart = model::setWeekStart, onSearchWeatherPlace = model::searchWeatherPlace, onChooseWeatherPlace = model::chooseWeatherPlace, onRemoveWeatherPlace = model::removeWeatherPlace, onCheckUpdates = model::checkUpdates)
-                                openDay != null -> DayListScreen(openDay, state, onBack = { model.openDay(null) }, onOpenEvent = model::openEvent)
+                                state.tasksOpen -> dev.bookah.calendar.ui.TasksScreen(state, onBack = { model.openTasks(false) }, onOpenTask = model::openTask)
+                                openDay != null -> DayListScreen(openDay, state, onBack = { model.openDay(null) }, onOpenEvent = model::openEvent, onOpenTask = model::openTask)
                                 state.view == ViewMode.Month -> MonthScreen(state, onMenu = { scope.launch { drawer.open() } }, onOpenDay = model::openDay)
                                 state.view == ViewMode.Day || state.view == ViewMode.ThreeDays || state.view == ViewMode.Week -> androidx.compose.runtime.key(state.view) {
                                     TimeGridScreen(
                                         state, daysPerPage = when (state.view) { ViewMode.Day -> 1; ViewMode.ThreeDays -> 3; else -> 7 },
                                         onMenu = { scope.launch { drawer.open() } }, onOpenEvent = model::openEvent,
                                         onNewAt = { day, minutes -> model.openNewEvent(day, minutes) },
+                                        onOpenTask = model::openTask,
                                     )
                                 }
-                                else -> ScheduleScreen(state, onMenu = { scope.launch { drawer.open() } }, onRefresh = model::refresh, onOpenEvent = model::openEvent)
+                                else -> ScheduleScreen(state, onMenu = { scope.launch { drawer.open() } }, onRefresh = model::refresh, onOpenEvent = model::openEvent, onOpenTask = model::openTask)
                             }
                         }
                     }
-                    // the "+" button: new event on today, or on the day whose page is open
-                    val showFab = state.phase == Phase.SignedIn && state.openEvent == null && state.editor == null && !state.settingsOpen && !state.searchOpen
+                    // the "+" button: new event on today, or on the day whose page is open (not on the task pages: it makes events, never tasks)
+                    val showFab = state.phase == Phase.SignedIn && state.openEvent == null && state.openTask == null && state.editor == null &&
+                        !state.settingsOpen && !state.searchOpen && !state.tasksOpen
                     if (showFab) NewEventButton(
                         { model.openNewEvent(state.openDay ?: java.time.LocalDate.now()) },
                         Modifier.align(androidx.compose.ui.Alignment.BottomEnd).safeDrawingPadding().padding(16.dp),
@@ -107,6 +111,13 @@ class MainActivity : ComponentActivity() {
                         EventSheet(
                             e, state.calendars.firstOrNull { it.id == e.calendarId }, model.editabilityOf(e), state.saving,
                             onEdit = { model.openEdit(e) }, onDelete = { scope, people -> model.deleteEvent(e, scope, people) }, onDismiss = { model.openEvent(null) },
+                        )
+                    }
+                    state.openTask?.let { t ->
+                        dev.bookah.calendar.ui.TaskPage(
+                            t, state.calendars.firstOrNull { it.id == t.calendarId },
+                            parentTitle = t.parentUid?.let { p -> state.allTasks.firstOrNull { it.uid == p }?.title },
+                            onDismiss = { model.openTask(null) },
                         )
                     }
                     state.editor?.let { editor ->

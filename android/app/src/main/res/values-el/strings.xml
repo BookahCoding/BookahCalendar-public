@@ -278,4 +278,28 @@
         <item quantity="one">φορά</item>
         <item quantity="other">φορές</item>
     </plurals>
+    <!-- Εργασίες του Nextcloud, μόνο για ανάγνωση (Φάση 4, μέρος 1) -->
+    <string name="drawer_tasks">Εργασίες</string>
+    <string name="source_task_lists">Λίστες εργασιών</string>
+    <string name="tasks_title">Εργασίες χωρίς ημερομηνία</string>
+    <string name="tasks_empty">Δεν υπάρχουν ανοιχτές εργασίες χωρίς ημερομηνία.</string>
+    <string name="tasks_hint">Οι εργασίες με ημερομηνία εμφανίζονται στη μέρα τους σε κάθε προβολή. Οι εργασίες αλλάζουν στο BookahTasks.</string>
+    <string name="task_glyph">Εργασία</string>
+    <string name="task_due">Προθεσμία: %1$s</string>
+    <string name="task_start">Έναρξη: %1$s</string>
+    <string name="task_no_date">Χωρίς ημερομηνία</string>
+    <string name="task_overdue">Εκπρόθεσμη</string>
+    <string name="task_priority_high">Υψηλή προτεραιότητα</string>
+    <string name="task_priority_medium">Μεσαία προτεραιότητα</string>
+    <string name="task_priority_low">Χαμηλή προτεραιότητα</string>
+    <string name="task_subtask_of">Υποεργασία της: %1$s</string>
+    <string name="task_read_only_note">Οι εργασίες εδώ μόνο εμφανίζονται. Τσέκαρέ τες ή άλλαξέ τες στο BookahTasks.</string>
+    <string name="task_open_in_tasks">Άνοιγμα στο BookahTasks</string>
+    <string name="task_tasks_missing">Το BookahTasks δεν είναι εγκατεστημένο σε αυτό το τηλέφωνο.</string>
+    <string name="task_late">Εκπρόθεσμη</string>
+    <string name="task_late_description">Εκπρόθεσμη: η προθεσμία πέρασε</string>
+    <plurals name="month_tile_tasks">
+        <item quantity="one">%1$d εργασία</item>
+        <item quantity="other">%1$d εργασίες</item>
+    </plurals>
 </resources>

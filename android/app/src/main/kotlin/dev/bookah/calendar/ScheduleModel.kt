@@ -5,12 +5,52 @@ import dev.bookah.calendar.data.Expander
 import dev.bookah.calendar.data.Instance
 import dev.bookah.calendar.data.Source
 import dev.bookah.calendar.data.StoredObject
+import dev.bookah.calendar.data.TaskItem
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-/** One day of the Schedule: its events, all-day ones first, then by start time. */
-data class DayItems(val date: LocalDate, val events: List<Instance>)
+/** One day of the Schedule: its events, all-day ones first, then by start time; and the open tasks placed on it (read-only, see [groupTasksByDay]). */
+data class DayItems(val date: LocalDate, val events: List<Instance>, val tasks: List<TaskItem> = emptyList())
+
+/**
+ * Puts the OPEN tasks on days: on the day of the deadline, else of the start (a date-only value on its date, a timed one on its local day).
+ * Finished tasks, tasks without any date and tasks outside [from]..[toExclusive] are left out. Date-only first, then by time, then by title.
+ */
+fun groupTasksByDay(tasks: List<TaskItem>, from: LocalDate, toExclusive: LocalDate, zone: ZoneId, today: LocalDate? = null): Map<LocalDate, List<TaskItem>> {
+    val byDay = HashMap<LocalDate, MutableList<TaskItem>>()
+    for (t in tasks) {
+        if (t.done) continue
+        val at = t.placedAt ?: continue
+        var day = if (t.placedAllDay) LocalDate.ofEpochDay(Math.floorDiv(at, DAY_MS)) else Instant.ofEpochMilli(at).atZone(zone).toLocalDate()
+        // overdue (the deadline's day has passed) folds onto today, as in BookahTasks; a start alone is never overdue
+        if (today != null && t.due != null && day.isBefore(today)) day = today
+        if (day.isBefore(from) || !day.isBefore(toExclusive)) continue
+        byDay.getOrPut(day) { ArrayList() }.add(t)
+    }
+    return byDay.mapValues { (_, list) -> list.sortedWith(compareByDescending<TaskItem> { it.placedAllDay }.thenBy { it.placedAt }.thenBy { it.title.lowercase() }) }
+}
+
+/** The days with their tasks filled in. */
+fun attachTasks(days: List<DayItems>, tasksByDay: Map<LocalDate, List<TaskItem>>): List<DayItems> =
+    if (tasksByDay.isEmpty()) days else days.map { d -> tasksByDay[d.date]?.let { d.copy(tasks = it) } ?: d }
+
+/** Open tasks with neither a start nor a deadline (the Tasks page), by list, then by title. */
+fun undatedTasks(tasks: List<TaskItem>): List<TaskItem> =
+    tasks.filter { !it.done && it.placedAt == null }.sortedWith(compareBy<TaskItem> { it.calendarId }.thenBy { it.title.lowercase() })
+
+/** "14:05" for a task placed by a timed value; null when it is placed by a date (or has none). */
+fun taskTimeText(t: TaskItem, zone: ZoneId): String? {
+    val at = t.placedAt ?: return null
+    return if (t.placedAllDay) null else TIME_FMT.format(Instant.ofEpochMilli(at).atZone(zone))
+}
+
+/** An open task whose deadline has passed (a date-only deadline is late from the next day on). A start alone is never late. */
+fun isOverdue(t: TaskItem, nowMs: Long, today: LocalDate): Boolean {
+    if (t.done) return false
+    val due = t.due ?: return false
+    return if (t.dueAllDay) LocalDate.ofEpochDay(Math.floorDiv(due, DAY_MS)).isBefore(today) else due < nowMs
+}
 
 /**
  * Puts instances on the days they cover. A timed event belongs to every local day it overlaps; an all-day event
@@ -65,6 +105,18 @@ fun dropGoogleDuplicates(objects: List<StoredObject>, calendars: List<CalendarIn
         !dup
     }
     return kept to hidden
+}
+
+/**
+ * What the expander reads (for the screens and for the reminders): the items of shown calendars that hold events. A task-only list is
+ * never handed over, so a task can never become an event or ring here (only BookahTasks rings for tasks).
+ */
+fun eventSources(objects: List<StoredObject>, calendars: List<CalendarInfo>): List<dev.bookah.calendar.data.ObjectSource> {
+    val shown = calendars.filter { it.visible && it.kind.holdsEvents }.associateBy { it.id }
+    return objects.mapNotNull { o ->
+        val cal = shown[o.calendarId] ?: return@mapNotNull null
+        dev.bookah.calendar.data.ObjectSource(o.calendarId, o.href, o.ics, o.href + "|" + o.etag, readOnly = !cal.editable)
+    }
 }
 
 private val TIME_FMT = java.time.format.DateTimeFormatter.ofPattern("HH:mm")   // 24-hour clock, as in the design spec

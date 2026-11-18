@@ -4,6 +4,18 @@ package dev.bookah.calendar.data
 enum class Source { Nextcloud, Google }
 
 /**
+ * What a Nextcloud collection holds, from its supported-calendar-component-set: events (VEVENT), tasks (VTODO, a task list made by the
+ * Nextcloud Tasks app) or both. Stored as its position, so the order must never change (Events = 0 is the stored default).
+ */
+enum class ListKind {
+    Events, Tasks, Both;
+
+    /** New events may be put here (a task-only list would refuse them). */
+    val holdsEvents: Boolean get() = this != Tasks
+    val holdsTasks: Boolean get() = this != Events
+}
+
+/**
  * One calendar shown in the app.
  * [href] is the server's own path (taken from its answer, never built from the login name: the server writes the user id
  * with a different letter case). For a Google feed it is "google:<feed id>".
@@ -19,6 +31,8 @@ data class CalendarInfo(
     val editable: Boolean,
     val visible: Boolean,
     val syncToken: String?,
+    /** Events, tasks or both; feeds are always events. */
+    val kind: ListKind = ListKind.Events,
 )
 
 /** A calendar as the server describes it. */
@@ -27,6 +41,7 @@ data class RemoteCalendar(
     val name: String,
     val colorHex: String?,
     val canWrite: Boolean,
+    val kind: ListKind = ListKind.Events,
 )
 
 /** A read-only feed shown as a calendar. [href] is "google:<feed id>". */

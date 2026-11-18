@@ -6,6 +6,7 @@ import android.content.Intent
 import dev.bookah.calendar.BookahApp
 import dev.bookah.calendar.data.FeedCalendar
 import dev.bookah.calendar.data.FeedConfig
+import dev.bookah.calendar.data.ListKind
 import dev.bookah.calendar.data.Source
 import dev.bookah.calendar.data.feedHref
 import dev.bookah.calendar.data.RemoteCalendar
@@ -34,8 +35,12 @@ class SeedReceiver : BroadcastReceiver() {
                 RemoteCalendar("/cal/a/", "Generated A", "#00679E", true),
                 RemoteCalendar("/cal/b/", "Generated B", "#E9D859", true),
                 RemoteCalendar("/cal/c/", "Generated C", "#7A7A7A", true),
+                // a task-only list (what the Nextcloud Tasks app makes) and a list that takes both events and tasks
+                RemoteCalendar("/cal/tasks/", "Generated tasks", "#3E8E41", true, kind = ListKind.Tasks),
+                RemoteCalendar("/cal/mixed/", "Generated mixed", "#C0504D", true, kind = ListKind.Both),
             ),
-        )
+        ).filter { it.kind == ListKind.Events }
+        seedTasks(graph)
         val fmt = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")
         val today = LocalDate.now()
         val objects = HashMap<Long, MutableList<RemoteObject>>()
@@ -93,6 +98,58 @@ class SeedReceiver : BroadcastReceiver() {
             FakeServer.current = null
         }
     }
+}
+
+/**
+ * Generated tasks (VTODO) for the two task-capable lists: dated all-day, dated with a time, overdue, without a date, finished (must not show),
+ * a subtask, a Greek title, one with its own reminder (must never ring here: only BookahTasks rings for tasks), the 00:00 / 23:59 forms
+ * BookahTasks writes, a start-only task, plus two events in the mixed list.
+ */
+private fun seedTasks(graph: dev.bookah.calendar.AppGraph) {
+    val all = graph.store.calendars()
+    val tasks = all.first { it.kind == ListKind.Tasks }
+    val mixed = all.first { it.kind == ListKind.Both }
+    val zone = java.time.ZoneId.systemDefault()
+    val utc = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")
+    val dateFmt = DateTimeFormatter.BASIC_ISO_DATE
+    val today = LocalDate.now(zone)
+    fun at(day: LocalDate, h: Int, m: Int) = utc.format(day.atTime(h, m).atZone(zone).withZoneSameInstant(ZoneOffset.UTC))
+    fun date(day: LocalDate) = dateFmt.format(day)
+    fun todo(uid: String, title: String, vararg lines: String) = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//generated//EN\r\nBEGIN:VTODO\r\nUID:$uid\r\n" +
+        "DTSTAMP:20260101T000000Z\r\nSUMMARY:$title\r\n" + lines.joinToString("") { "$it\r\n" } + "END:VTODO\r\nEND:VCALENDAR\r\n"
+    val soon = java.time.Instant.now().plusSeconds(240).atOffset(ZoneOffset.UTC)
+    val taskObjects = listOf(
+        "t-allday" to todo("t-allday@invalid", "Generated bill to pay", "DUE;VALUE=DATE:${date(today.plusDays(1))}", "PRIORITY:1",
+            "DESCRIPTION:Generated notes for this task.\\nA second line.", "URL:https://example.org/generated"),
+        "t-timed" to todo("t-timed@invalid", "Generated call", "DUE:${at(today, 15, 30)}"),
+        "t-overdue" to todo("t-overdue@invalid", "Generated overdue task", "DUE;VALUE=DATE:${date(today.minusDays(2))}", "PRIORITY:5"),
+        "t-undated" to todo("t-undated@invalid", "Generated task without a date", "PRIORITY:9"),
+        "t-parent" to todo("t-parent@invalid", "Generated parent task"),
+        "t-child" to todo("t-child@invalid", "Generated subtask", "DUE;VALUE=DATE:${date(today.plusDays(2))}", "RELATED-TO:t-parent@invalid"),
+        "t-greek" to todo("t-greek@invalid", "Αγορά ψωμιού", "DUE;VALUE=DATE:${date(today)}"),
+        "t-alarm" to todo("t-alarm@invalid", "Generated task with its own reminder", "DUE:${utc.format(soon)}",
+            "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:r", "TRIGGER:-PT2M", "END:VALARM"),
+        // how BookahTasks stores a date-only start beside a timed deadline (00:00) and a date-only deadline beside a timed start (23:59)
+        "t-coerced-start" to todo("t-coerced-start@invalid", "Generated task, start at midnight", "DTSTART:${at(today.plusDays(1), 0, 0)}", "DUE:${at(today.plusDays(3), 14, 0)}"),
+        "t-coerced-due" to todo("t-coerced-due@invalid", "Generated task, deadline 23:59", "DTSTART:${at(today.plusDays(2), 9, 0)}", "DUE:${at(today.plusDays(4), 23, 59)}"),
+        "t-start-only" to todo("t-start-only@invalid", "Generated task, start only", "DTSTART;VALUE=DATE:${date(today.plusDays(5))}"),
+        "t-done" to todo("t-done@invalid", "Generated finished task", "DUE;VALUE=DATE:${date(today)}", "STATUS:COMPLETED", "COMPLETED:20260101T000000Z"),
+    ).map { (name, ics) -> RemoteObject("${tasks.href}$name.ics", "t-$name", ics) }
+    graph.store.upsertObjects(tasks.id, taskObjects)
+    val mixedObjects = listOf(
+        RemoteObject("${mixed.href}m-undated.ics", "m1", todo("m-undated@invalid", "Generated mixed-list task without a date")),
+        RemoteObject("${mixed.href}m-dated.ics", "m2", todo("m-dated@invalid", "Generated mixed-list task", "DUE:${at(today.plusDays(1), 10, 0)}")),
+        // 100 percent but not completed: still open, as in BookahTasks
+        RemoteObject("${mixed.href}m-full.ics", "m3", todo("m-full@invalid", "Generated task at 100 percent, still open", "DUE;VALUE=DATE:${date(today)}", "PERCENT-COMPLETE:100")),
+        // overdue without a time: shows the "Late" label
+        RemoteObject("${mixed.href}m-late.ics", "m5", todo("m-late@invalid", "Generated late task without a time", "DUE;VALUE=DATE:${date(today.minusDays(1))}")),
+        RemoteObject(
+            "${mixed.href}m-event.ics", "m4",
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//generated//EN\r\nBEGIN:VEVENT\r\nUID:m-event@invalid\r\nDTSTAMP:20260101T000000Z\r\n" +
+                "DTSTART:${at(today, 12, 0)}\r\nDTEND:${at(today, 13, 0)}\r\nSUMMARY:Generated mixed-list event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+        ),
+    )
+    graph.store.upsertObjects(mixed.id, mixedObjects)
 }
 
 /** A long description (about 60 sentences, folded like a real iCal line) to test scrolling of the event page. */

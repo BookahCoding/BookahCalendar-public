@@ -36,7 +36,8 @@ class EventWriter(
 ) {
     suspend fun create(calendarId: Long, draft: EventDraft): WriteResult {
         val calendar = store.calendars().firstOrNull { it.id == calendarId }
-        if (calendar == null || calendar.source != Source.Nextcloud || !calendar.editable) return WriteResult.Refused("This calendar cannot be changed.")
+        // a task-only list would refuse an event anyway: never even try (the form already leaves such lists out)
+        if (calendar == null || calendar.source != Source.Nextcloud || !calendar.editable || !calendar.kind.holdsEvents) return WriteResult.Refused("This calendar cannot be changed.")
         IcsEdit.validate(draft.whenAt)?.let { return WriteResult.Refused(it) }
         val uid = newUid()
         val href = calendar.href.trimEnd('/') + "/" + uid + ".ics"
@@ -201,7 +202,8 @@ class EventWriter(
     /** Null when the calendar of this object may be written to at all (a writable Nextcloud calendar). */
     private fun calendarRefusal(obj: StoredObject): WriteResult.Refused? {
         val calendar = store.calendars().firstOrNull { it.id == obj.calendarId }
-        return if (calendar == null || calendar.source != Source.Nextcloud || !calendar.editable) WriteResult.Refused("This calendar cannot be changed.") else null
+        // a task-only list is never written by this app (its items are tasks, which only BookahTasks changes)
+        return if (calendar == null || calendar.source != Source.Nextcloud || !calendar.editable || !calendar.kind.holdsEvents) WriteResult.Refused("This calendar cannot be changed.") else null
     }
 
     /** Null when this stored object may be changed or deleted by the app. */

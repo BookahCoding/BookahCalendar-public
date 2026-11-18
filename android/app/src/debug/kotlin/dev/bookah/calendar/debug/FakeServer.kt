@@ -56,7 +56,8 @@ class FakeServer(private val calendars: List<RemoteCalendar>, seed: List<RemoteO
         fun from(store: CalendarStore): FakeServer {
             val cals = store.calendars().filter { it.source == Source.Nextcloud }
             val seed = cals.flatMap { c -> store.objects(c.id).map { RemoteObject(it.href, it.etag, it.ics) } }
-            return FakeServer(cals.map { RemoteCalendar(it.href, it.name, it.colorHex, canWrite = true) }, seed)
+            // the kind is kept, or the first fake sync would turn a task list into an event calendar
+            return FakeServer(cals.map { RemoteCalendar(it.href, it.name, it.colorHex, canWrite = true, kind = it.kind) }, seed)
         }
     }
 }

@@ -5,7 +5,7 @@ package dev.bookah.calendar.data
  * tests use [MemoryCalendarStore].
  */
 interface CalendarStore {
-    /** Adds new calendars, updates name/colour/rights of known ones (keeping their show/hide choice), removes the ones the server no longer lists (with their objects). */
+    /** Adds new calendars, updates name/colour/rights/kind of known ones (keeping their show/hide choice), removes the ones the server no longer lists (with their objects). */
     fun replaceNextcloudCalendars(remote: List<RemoteCalendar>): List<CalendarInfo>
     /**
      * Adds read-only feed calendars (Google), updates name/colour of known ones (keeping show/hide), removes feed calendars that are no longer
@@ -48,9 +48,9 @@ class MemoryCalendarStore : CalendarStore {
             val editable = r.canWrite && !isContactBirthdays(r.href)
             if (old == null) {
                 val id = nextId++
-                cals[id] = CalendarInfo(id, r.href, r.name, r.colorHex ?: DEFAULT_COLOR, Source.Nextcloud, editable, visible = !isContactBirthdays(r.href), syncToken = null)
+                cals[id] = CalendarInfo(id, r.href, r.name, r.colorHex ?: DEFAULT_COLOR, Source.Nextcloud, editable, visible = !isContactBirthdays(r.href), syncToken = null, kind = r.kind)
             } else {
-                cals[old.id] = old.copy(name = r.name, colorHex = r.colorHex ?: old.colorHex, editable = editable)
+                cals[old.id] = old.copy(name = r.name, colorHex = r.colorHex ?: old.colorHex, editable = editable, kind = r.kind)
             }
         }
         for (old in byHref.values) if (old.href !in keep) { cals.remove(old.id); objs.values.removeAll { it.calendarId == old.id } }

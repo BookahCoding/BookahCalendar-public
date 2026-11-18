@@ -103,7 +103,8 @@ private data class Initial(
 
 private fun initialFor(editor: Editor, state: UiState, zone: ZoneId): Initial = when (editor) {
     is Editor.New -> {
-        val first = state.calendars.firstOrNull { it.source == Source.Nextcloud && it.editable }?.id ?: -1L
+        // a task-only list would refuse an event: never the default
+        val first = state.calendars.firstOrNull { it.source == Source.Nextcloud && it.editable && it.kind.holdsEvents }?.id ?: -1L
         val now = LocalDateTime.now(zone)
         val start = when {
             editor.startMinutes != null -> editor.day.atTime(editor.startMinutes / 60, editor.startMinutes % 60)       // the hour that was tapped in a grid
@@ -186,7 +187,7 @@ fun EditEventScreen(
         when (repeatEnd) { 1 -> RepeatEnd.Until(LocalDate.ofEpochDay(repeatUntil)); 2 -> RepeatEnd.Count(repeatTimes); else -> RepeatEnd.Never },
     )
     val repeatProblem = rule?.problem(start.toLocalDate())
-    val writable = remember(state.calendars) { state.calendars.filter { it.source == Source.Nextcloud && it.editable } }
+    val writable = remember(state.calendars) { state.calendars.filter { it.source == Source.Nextcloud && it.editable && it.kind.holdsEvents } }
     val dirty = if (isNew) title.isNotBlank() || location.isNotBlank() || notes.isNotBlank() || reminders.toSet() != init.reminders.toSet() || colorName != init.colorName
     else title != init.title || location != init.location || notes != init.notes || whenAt != initialWhen || reminders.toSet() != init.reminders.toSet() || colorName != init.colorName
     val canSave = !state.saving && timeProblem == null && repeatProblem == null && (if (isNew) title.isNotBlank() && calendarId > 0 else dirty)

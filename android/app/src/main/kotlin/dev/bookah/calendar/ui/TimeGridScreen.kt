@@ -95,6 +95,7 @@ fun TimeGridScreen(
     onMenu: () -> Unit,
     onOpenEvent: (Instance) -> Unit,
     onNewAt: (LocalDate, Int) -> Unit,
+    onOpenTask: (dev.bookah.calendar.data.TaskItem) -> Unit = {},
 ) {
     val zone = remember { ZoneId.systemDefault() }
     val today = remember { LocalDate.now(zone) }
@@ -145,7 +146,7 @@ fun TimeGridScreen(
         ) {
             HorizontalPager(pager, Modifier.fillMaxSize(), key = { it }) { page ->
                 val dates = List(daysPerPage) { align.plusDays(page.toLong() * daysPerPage + it) }
-                CappedFontScale(1.15f) { GridPage(dates, state, colors, today, zone, hourDp, scroll, onOpenEvent, onNewAt) }
+                CappedFontScale(1.15f) { GridPage(dates, state, colors, today, zone, hourDp, scroll, onOpenEvent, onNewAt, onOpenTask) }
             }
         }
     }
@@ -155,6 +156,7 @@ fun TimeGridScreen(
 private fun GridPage(
     dates: List<LocalDate>, state: UiState, colors: Map<Long, CalendarInfo>, today: LocalDate, zone: ZoneId, hourDp: Float,
     scroll: androidx.compose.foundation.ScrollState, onOpenEvent: (Instance) -> Unit, onNewAt: (LocalDate, Int) -> Unit,
+    onOpenTask: (dev.bookah.calendar.data.TaskItem) -> Unit,
 ) {
     val t = LocalThemeColors.current
     // a long press on an empty spot starts a one-hour box under the finger; moving the finger moves it (day and time); letting go opens the new event form there
@@ -178,12 +180,13 @@ private fun GridPage(
                 }
             }
         }
-        // all-day strip
+        // all-day strip: all-day events, then the day's open tasks (a timed task shows "14:00 title"); it also appears when a day has only tasks
         val strips = dates.map { allDayFor(state.dayAt(it)?.events.orEmpty(), it) }
-        if (strips.any { it.isNotEmpty() }) {
+        val taskStrips = dates.map { state.dayAt(it)?.tasks.orEmpty() }
+        if (strips.any { it.isNotEmpty() } || taskStrips.any { it.isNotEmpty() }) {
             Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                 Spacer(Modifier.width(LABEL_WIDTH))
-                for (list in strips) {
+                for ((list, tasks) in strips.zip(taskStrips)) {
                     Column(Modifier.weight(1f).padding(horizontal = 1.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)) {
                         for (e in list.take(3)) {
                             val chip = eventChipColor(e, colors[e.calendarId])
@@ -193,7 +196,20 @@ private fun GridPage(
                                 color = chip.text, fontSize = 11.sp, lineHeight = 20.sp, maxLines = 1, overflow = TextOverflow.Clip,
                             )
                         }
-                        if (list.size > 3) Text(stringResource(R.string.more_events, list.size - 3), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        for (t in tasks.take((3 - list.size).coerceAtLeast(0))) {
+                            val chip = ChipColor.forCalendar(taskListColor(colors[t.calendarId]))
+                            val label = listOfNotNull(dev.bookah.calendar.taskTimeText(t, zone), t.title.ifBlank { stringResource(R.string.no_title) }).joinToString(" ")
+                            Row(
+                                Modifier.fillMaxWidth().height(20.dp).clip(RoundedCornerShape(4.dp)).background(chip.fill).clickable { onOpenTask(t) }.padding(horizontal = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                TaskGlyph(chip.text, 9.dp)
+                                Spacer(Modifier.width(3.dp))
+                                Text(label, color = chip.text, fontSize = 11.sp, lineHeight = 20.sp, maxLines = 1, overflow = TextOverflow.Clip)
+                            }
+                        }
+                        val more = list.size + tasks.size - 3
+                        if (more > 0) Text(stringResource(R.string.more_events, more), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

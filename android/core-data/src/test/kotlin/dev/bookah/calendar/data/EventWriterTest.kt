@@ -71,6 +71,12 @@ class EventWriterTest {
         assertTrue("SUMMARY:Dentist" in local.ics)
     }
 
+    @Test fun anEventCannotBeAddedToATaskOnlyList() = runTest {
+        val tasks = store.replaceNextcloudCalendars(listOf(RemoteCalendar("/cal/tasks/", "Tasks", "#3E8E41", true, kind = ListKind.Tasks))).single().id
+        assertTrue(writer.create(tasks, draft) is WriteResult.Refused)
+        assertTrue(server.log.isEmpty())
+    }
+
     @Test fun anEventCannotBeAddedToAReadOnlyOrFeedCalendar() = runTest {
         val readOnly = calendar(canWrite = false)
         assertTrue(writer.create(readOnly, draft) is WriteResult.Refused)

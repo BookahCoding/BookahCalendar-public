@@ -22,6 +22,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +65,22 @@ fun CappedFontScale(max: Float, content: @Composable () -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, minOf(d.fontScale, max)), content = content,
     )
+}
+
+/**
+ * Today's date that follows the clock: read again whenever the app comes back to the front and at the next midnight, so a screen left open
+ * overnight (or reopened the next morning) marks the right day and judges "late" against it.
+ */
+@Composable
+fun rememberToday(zone: java.time.ZoneId): LocalDate {
+    var today by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(LocalDate.now(zone)) }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { today = LocalDate.now(zone) }
+    androidx.compose.runtime.LaunchedEffect(today) {
+        val nextMidnight = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        kotlinx.coroutines.delay((nextMidnight - System.currentTimeMillis()).coerceAtLeast(1_000L))
+        today = LocalDate.now(zone)
+    }
+    return today
 }
 
 /** Opens the search page; provided once by the main activity so every main screen's top bar can show the search button. */

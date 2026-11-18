@@ -6,19 +6,31 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.util.concurrent.atomic.AtomicLong
 
-/** The phone's copy of the calendars: two small tables in plain SQLite (no code generation needed). */
+/**
+ * The phone's copy of the calendars: two small tables in plain SQLite (no code generation needed).
+ * Version 2 (Phase 4 tasks): `calendars.kind` = [ListKind] position (0 events, 1 tasks, 2 both).
+ */
 class SqliteCalendarStore(context: Context, name: String = "calendar.db") : CalendarStore {
-    private val helper = object : SQLiteOpenHelper(context.applicationContext, name, null, 1) {
+    private val helper = object : SQLiteOpenHelper(context.applicationContext, name, null, 2) {
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL(
                 "CREATE TABLE calendars(id INTEGER PRIMARY KEY AUTOINCREMENT, href TEXT NOT NULL UNIQUE, name TEXT NOT NULL, " +
-                    "color TEXT NOT NULL, source INTEGER NOT NULL, editable INTEGER NOT NULL, visible INTEGER NOT NULL, sync_token TEXT)",
+                    "color TEXT NOT NULL, source INTEGER NOT NULL, editable INTEGER NOT NULL, visible INTEGER NOT NULL, sync_token TEXT, " +
+                    "kind INTEGER NOT NULL DEFAULT 0)",
             )
             db.execSQL("CREATE TABLE objects(href TEXT PRIMARY KEY, calendar_id INTEGER NOT NULL, etag TEXT NOT NULL, ics TEXT NOT NULL)")
             db.execSQL("CREATE INDEX objects_calendar ON objects(calendar_id)")
         }
 
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            // version 1 knew only event calendars: they all become kind 0 (events), their show/hide choice and objects stay. A mixed list is
+            // corrected by the next sync (the kind follows the server); task-only lists were never stored and arrive with that sync.
+            if (oldVersion < 2) db.execSQL("ALTER TABLE calendars ADD COLUMN kind INTEGER NOT NULL DEFAULT 0")
+        }
+
+        // An older app version installed over this one (a test build, a rollback): the extra kind column is harmless to it, so the copy
+        // is kept as it is instead of the default crash ("Can't downgrade database").
+        override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
     }
     private val ver = AtomicLong(0)
     private val db: SQLiteDatabase get() = helper.writableDatabase
@@ -65,12 +77,13 @@ class SqliteCalendarStore(context: Context, name: String = "calendar.db") : Cale
                     val v = ContentValues().apply {
                         put("href", r.href); put("name", r.name); put("color", r.colorHex ?: DEFAULT_COLOR)
                         put("source", Source.Nextcloud.ordinal); put("editable", if (editable) 1 else 0)
-                        put("visible", if (isContactBirthdays(r.href)) 0 else 1)
+                        put("visible", if (isContactBirthdays(r.href)) 0 else 1); put("kind", r.kind.ordinal)
                     }
                     db.insert("calendars", null, v)
                 } else {
+                    // never "visible": the owner's show/hide choice survives every sync
                     val v = ContentValues().apply {
-                        put("name", r.name); put("color", r.colorHex ?: old.colorHex); put("editable", if (editable) 1 else 0)
+                        put("name", r.name); put("color", r.colorHex ?: old.colorHex); put("editable", if (editable) 1 else 0); put("kind", r.kind.ordinal)
                     }
                     db.update("calendars", v, "id=?", arrayOf(old.id.toString()))
                 }
@@ -89,13 +102,14 @@ class SqliteCalendarStore(context: Context, name: String = "calendar.db") : Cale
 
     override fun calendars(): List<CalendarInfo> {
         val out = ArrayList<CalendarInfo>()
-        db.rawQuery("SELECT id, href, name, color, source, editable, visible, sync_token FROM calendars ORDER BY id", null).use { c ->
+        db.rawQuery("SELECT id, href, name, color, source, editable, visible, sync_token, kind FROM calendars ORDER BY id", null).use { c ->
             while (c.moveToNext()) {
                 out.add(
                     CalendarInfo(
                         id = c.getLong(0), href = c.getString(1), name = c.getString(2), colorHex = c.getString(3),
                         source = Source.entries[c.getInt(4)], editable = c.getInt(5) == 1, visible = c.getInt(6) == 1,
                         syncToken = if (c.isNull(7)) null else c.getString(7),
+                        kind = ListKind.entries.getOrElse(c.getInt(8)) { ListKind.Events },
                     ),
                 )
             }

@@ -281,4 +281,28 @@
         <item quantity="one">time</item>
         <item quantity="other">times</item>
     </plurals>
+    <!-- Nextcloud tasks, shown read-only (Phase 4, slice 1) -->
+    <string name="drawer_tasks">Tasks</string>
+    <string name="source_task_lists">Task lists</string>
+    <string name="tasks_title">Tasks without a date</string>
+    <string name="tasks_empty">No open tasks without a date.</string>
+    <string name="tasks_hint">Tasks with a date are shown on their day in every view. Tasks are changed in BookahTasks.</string>
+    <string name="task_glyph">Task</string>
+    <string name="task_due">Deadline: %1$s</string>
+    <string name="task_start">Start: %1$s</string>
+    <string name="task_no_date">No date</string>
+    <string name="task_overdue">Overdue</string>
+    <string name="task_priority_high">High priority</string>
+    <string name="task_priority_medium">Medium priority</string>
+    <string name="task_priority_low">Low priority</string>
+    <string name="task_subtask_of">Subtask of: %1$s</string>
+    <string name="task_read_only_note">Tasks are only shown here. Tick them off or change them in BookahTasks.</string>
+    <string name="task_open_in_tasks">Open in BookahTasks</string>
+    <string name="task_tasks_missing">BookahTasks is not installed on this phone.</string>
+    <string name="task_late">Late</string>
+    <string name="task_late_description">Late: the deadline has passed</string>
+    <plurals name="month_tile_tasks">
+        <item quantity="one">%1$d task</item>
+        <item quantity="other">%1$d tasks</item>
+    </plurals>
 </resources>

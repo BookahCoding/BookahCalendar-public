@@ -126,14 +126,21 @@ class CalDavClient(private val http: OkHttpClient, private val session: Session)
                 val prop = okProp(resp) ?: continue
                 val resourceType = child(prop, DAV, "resourcetype") ?: continue
                 if (child(resourceType, CALDAV, "calendar") == null) continue       // skips subscriptions, inbox, outbox, trash
-                val comps = child(prop, CALDAV, "supported-calendar-component-set")
-                val hasEvents = comps == null || children(comps, CALDAV, "comp").any { it.getAttribute("name").equals("VEVENT", true) }
-                if (!hasEvents) continue
+                // no component list means the server takes events (as before); a list decides events, tasks or both; neither (journals) is skipped
+                val comps = child(prop, CALDAV, "supported-calendar-component-set")?.let { c -> children(c, CALDAV, "comp").map { it.getAttribute("name").uppercase() } }
+                val hasEvents = comps == null || "VEVENT" in comps
+                val hasTasks = comps != null && "VTODO" in comps
+                val kind = when {
+                    hasEvents && hasTasks -> ListKind.Both
+                    hasEvents -> ListKind.Events
+                    hasTasks -> ListKind.Tasks
+                    else -> continue
+                }
                 val href = text(resp, DAV, "href") ?: continue
                 val privs = child(prop, DAV, "current-user-privilege-set")
                     ?.let { p -> descendants(p).map { it.localName } }.orEmpty().toSet()
                 val canWrite = "all" in privs || "write" in privs || "write-content" in privs || "bind" in privs
-                out.add(RemoteCalendar(href, text(prop, DAV, "displayname")?.ifBlank { null } ?: href.trimEnd('/').substringAfterLast('/'), normalizeColor(text(prop, APPLE, "calendar-color")), canWrite))
+                out.add(RemoteCalendar(href, text(prop, DAV, "displayname")?.ifBlank { null } ?: href.trimEnd('/').substringAfterLast('/'), normalizeColor(text(prop, APPLE, "calendar-color")), canWrite, kind))
             }
             return out
         }

@@ -32,11 +32,28 @@ class CalDavParseTest {
   <d:propstat><d:prop><d:displayname>Shared, read only</d:displayname><d:resourcetype><d:collection/><c:calendar/></d:resourcetype>
    <c:supported-calendar-component-set><c:comp name="VEVENT"/></c:supported-calendar-component-set>
    <d:current-user-privilege-set><d:privilege><d:read/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>
+ <d:response><d:href>/remote.php/dav/calendars/Demo/mixed/</d:href>
+  <d:propstat><d:prop><d:displayname>Mixed</d:displayname><d:resourcetype><d:collection/><c:calendar/></d:resourcetype>
+   <c:supported-calendar-component-set><c:comp name="VEVENT"/><c:comp name="VTODO"/></c:supported-calendar-component-set>
+   <d:current-user-privilege-set><d:privilege><d:write/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>
+ <d:response><d:href>/remote.php/dav/calendars/Demo/journal/</d:href>
+  <d:propstat><d:prop><d:displayname>Journal</d:displayname><d:resourcetype><d:collection/><c:calendar/></d:resourcetype>
+   <c:supported-calendar-component-set><c:comp name="VJOURNAL"/></c:supported-calendar-component-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>
+ <d:response><d:href>/remote.php/dav/calendars/Demo/nocomps/</d:href>
+  <d:propstat><d:prop><d:displayname>No component list</d:displayname><d:resourcetype><d:collection/><c:calendar/></d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>
 </d:multistatus>"""
 
-    @Test fun listsOnlyEventCalendars() {
+    @Test fun listsEventCalendarsAndTaskListsButNotJournals() {
         val list = CalDavClient.parseCalendarList(calendars)
-        assertEquals(listOf("Personal", "Contact birthdays", "Shared, read only"), list.map { it.name })
+        assertEquals(listOf("Personal", "Contact birthdays", "Tasks", "Shared, read only", "Mixed", "No component list"), list.map { it.name })
+    }
+
+    @Test fun theKindFollowsTheSupportedComponents() {
+        val kinds = CalDavClient.parseCalendarList(calendars).associate { it.name to it.kind }
+        assertEquals(ListKind.Events, kinds["Personal"])
+        assertEquals(ListKind.Tasks, kinds["Tasks"])                 // a VTODO-only list (what the Nextcloud Tasks app makes)
+        assertEquals(ListKind.Both, kinds["Mixed"])
+        assertEquals(ListKind.Events, kinds["No component list"])    // no list given: the server allows events, as before
     }
 
     @Test fun keepsServerPathsAndDropsAlphaFromColours() {
