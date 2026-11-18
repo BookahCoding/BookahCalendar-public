@@ -27,6 +27,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.IntOffset
+import dev.bookah.calendar.ownsDrag
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -80,24 +91,31 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-/** BookahTasks' package: the only app this one opens for tasks (declared in the manifest's queries so Android lets us see it). */
-private const val TASKS_PACKAGE = "dev.bookah.tasks"
-
 /** The colour of a task's list (tasks have no colour of their own here). */
 fun taskListColor(calendar: CalendarInfo?): Color = ChipColor.parse(calendar?.colorHex ?: "#00679E")
 
-/** The round mark of a task where it is only a mark (Month chips, the all-day strip): a tap there opens the task page, it never ticks. */
+/**
+ * A task's pill colours: the list's colour through the same [ChipColor.forCalendar] as events (so the writing on it is black or white with the
+ * contrast ThemeContrastTest / the chip colour tests check), used by every view (Schedule, day page, Tasks page, Month chips, all-day strip).
+ */
+fun taskChipColor(calendar: CalendarInfo?): dev.bookah.calendar.design.ChipColors = ChipColor.forCalendar(taskListColor(calendar))
+
+/**
+ * The task's tick symbol, an empty checkbox (a rounded square, unlike anything on an event), drawn in the pill's writing colour. Where it is only
+ * a mark (Month chips, the all-day strip, the task page title) a tap there opens the task page; it never ticks.
+ */
 @Composable
 fun TaskGlyph(color: Color, size: Dp, modifier: Modifier = Modifier, described: Boolean = true) {
     val spoken = stringResource(R.string.task_glyph)
+    val shape = RoundedCornerShape(size / 4)
     Box(
-        modifier.size(size).clip(CircleShape).border(maxOf(1.dp, size / 9), color, CircleShape)
+        modifier.size(size).clip(shape).border(maxOf(1.dp, size / 8), color, shape)
             .then(if (described) Modifier.semantics { contentDescription = spoken } else Modifier),
     )
 }
 
 /**
- * The round mark as a checkbox with a 48 dp touch target. [tickable]: a tap marks the task done (spoken "Mark done: <title>"). Otherwise a tap
+ * The tick symbol as a checkbox with a 48 dp touch target. [tickable]: a tap marks the task done (spoken "Mark done: <title>"). Otherwise a tap
  * calls [onTap] too, and the view model opens the task page, which says why it cannot be ticked here. [saving]: a small spinner, no taps.
  */
 @Composable
@@ -115,89 +133,266 @@ fun TaskCheckbox(task: TaskItem, color: Color, tickable: Boolean, saving: Boolea
         contentAlignment = Alignment.Center,
     ) {
         if (saving) CircularProgressIndicator(Modifier.size(size), color = color, strokeWidth = 2.dp)
-        else Box(Modifier.size(size).clip(CircleShape).border(maxOf(1.dp, size / 9), color, CircleShape))
+        else TaskGlyph(color, size, described = false)
     }
 }
 
 /**
- * A quiet task line under a day's events: the mark in the list's colour, the title, the time if it has one. A late task (deadline passed, with
- * or without a time) also gets the word "Late" in a small outlined label, so lateness is never told by colour alone. With [onTick] the mark is a
- * [TaskCheckbox]; the rest of the row opens the task page.
+ * A task as a pill like an [EventCard]: the list's colour ([taskChipColor]), the same rounded shape, the title, and under it the time if it has
+ * one. The tick symbol before the title tells it from an event at a glance. A late task (deadline passed, with or without a time) gets the word
+ * "Late" in a small outlined label inside the pill, so lateness is never told by colour alone. With [onTick] the symbol is a [TaskCheckbox]
+ * (48 dp); the rest of the pill opens the task page. [trailing] draws a button at the end of the pill in the pill's writing colour.
  */
 @Composable
 fun TaskRow(
     task: TaskItem, calendar: CalendarInfo?, zone: ZoneId, nowMs: Long, today: LocalDate, onClick: () -> Unit, showTime: Boolean = true,
-    onTick: (() -> Unit)? = null, tickable: Boolean = false, saving: Boolean = false,
+    onTick: (() -> Unit)? = null, tickable: Boolean = false, saving: Boolean = false, trailing: (@Composable (Color) -> Unit)? = null,
 ) {
+    val chip = taskChipColor(calendar)
     val late = isOverdue(task, nowMs, today)
     val lateSpoken = stringResource(R.string.task_late_description)
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
-            .padding(start = if (onTick != null) 0.dp else 12.dp, end = 12.dp, top = if (onTick != null) 0.dp else 6.dp, bottom = if (onTick != null) 0.dp else 6.dp),
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(16.dp)).background(chip.fill).clickable(onClick = onClick)
+            .padding(start = if (onTick != null) 2.dp else 14.dp, end = if (trailing != null) 2.dp else 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onTick != null) {
-            TaskCheckbox(task, taskListColor(calendar), tickable, saving, onTick)
-            Spacer(Modifier.size(4.dp))
+            TaskCheckbox(task, chip.text, tickable, saving, onTick)
         } else {
-            TaskGlyph(taskListColor(calendar), 18.dp)
+            TaskGlyph(chip.text, 18.dp)
             Spacer(Modifier.size(12.dp))
         }
-        Text(
-            task.title.ifBlank { stringResource(R.string.no_title) }, Modifier.weight(1f), fontSize = 15.sp, color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 2, overflow = TextOverflow.Ellipsis,
-        )
-        if (late) {
+        Column(Modifier.weight(1f).padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                stringResource(R.string.task_late),
-                Modifier.padding(start = 8.dp).border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp)
-                    .semantics { contentDescription = lateSpoken },
-                fontSize = 12.sp, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Medium, maxLines = 1,
+                task.title.ifBlank { stringResource(R.string.no_title) }, color = chip.text, fontSize = 16.sp, fontWeight = FontWeight.Medium,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
+            val time = if (showTime) taskTimeText(task, zone) else null
+            if (late || time != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                if (late) {
+                    Text(
+                        stringResource(R.string.task_late),
+                        Modifier.border(1.dp, chip.text, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp)
+                            .semantics { contentDescription = lateSpoken },
+                        fontSize = 12.sp, color = chip.text, fontWeight = FontWeight.Medium, maxLines = 1,
+                    )
+                }
+                if (time != null) Text(time, Modifier.padding(start = if (late) 8.dp else 0.dp), fontSize = 14.sp, color = chip.text)
+            }
         }
-        val time = if (showTime) taskTimeText(task, zone) else null
-        if (time != null) Text(time, Modifier.padding(start = 8.dp), fontSize = 14.sp, color = if (late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+        trailing?.invoke(chip.text)
     }
 }
 
 /** A [TaskRow] whose mark is a checkbox, wired to the state (Schedule, day page, Tasks page). */
 @Composable
-fun TickableTaskRow(task: TaskItem, calendar: CalendarInfo?, zone: ZoneId, nowMs: Long, today: LocalDate, state: UiState, onOpen: () -> Unit, onTick: () -> Unit) =
-    TaskRow(
-        task, calendar, zone, nowMs, today, onOpen, onTick = onTick,
-        tickable = state.taskEditability[task.key] == TaskEditability.Editable, saving = state.taskSaving == task.key,
-    )
+fun TickableTaskRow(
+    task: TaskItem, calendar: CalendarInfo?, zone: ZoneId, nowMs: Long, today: LocalDate, state: UiState, onOpen: () -> Unit, onTick: () -> Unit,
+    trailing: (@Composable (Color) -> Unit)? = null,
+) = TaskRow(
+    task, calendar, zone, nowMs, today, onOpen, onTick = onTick,
+    tickable = state.taskEditability[task.key] == TaskEditability.Editable, saving = state.taskSaving == task.key, trailing = trailing,
+)
 
-/** The Tasks page from the drawer: open tasks with no date, grouped by their list. Back returns to the view before. */
+/**
+ * The Tasks page from the drawer: open tasks with no date, grouped by their list. Back returns to the view before. Each row has a "Pick a day"
+ * button (a date picker, then [onMove]); a task that may be moved can also be held and dragged onto the day strip that appears at the bottom
+ * (today, tomorrow, the next five days). Letting go anywhere else writes nothing.
+ */
 @Composable
-fun TasksScreen(state: UiState, onBack: () -> Unit, onOpenTask: (TaskItem) -> Unit, onTick: (TaskItem) -> Unit = {}) {
+fun TasksScreen(
+    state: UiState, onBack: () -> Unit, onOpenTask: (TaskItem) -> Unit, onTick: (TaskItem) -> Unit = {},
+    onMove: (TaskItem, LocalDate) -> Unit = { _, _ -> },
+) {
     val zone = remember { ZoneId.systemDefault() }
     val today = rememberToday(zone)
     val now = remember(state.undatedTasks, today) { System.currentTimeMillis() }
     val cals = remember(state.calendars) { state.calendars.associateBy { it.id } }
     val groups = remember(state.undatedTasks) { state.undatedTasks.groupBy { it.calendarId } }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().background(MaterialTheme.colorScheme.background)) {
-        AppTopBar(stringResource(R.string.tasks_title), back = true, onNav = onBack)
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)) {
-            item {
-                Text(stringResource(R.string.tasks_hint), Modifier.padding(horizontal = 12.dp, vertical = 4.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (groups.isEmpty()) item {
-                Text(stringResource(R.string.tasks_empty), Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            for ((calId, list) in groups) {
-                val cal = cals[calId]
-                item(key = "list|$calId") {
-                    Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(10.dp).clip(CircleShape).background(taskListColor(cal)))
-                        Spacer(Modifier.size(8.dp))
-                        Text(cal?.name.orEmpty(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    var drag by remember { mutableStateOf<dev.bookah.calendar.DragSession?>(null) }
+    val boxes = remember { androidx.compose.runtime.mutableStateMapOf<LocalDate, dev.bookah.calendar.DropBox>() }
+    var picking by remember { mutableStateOf<TaskItem?>(null) }
+    var screenOrigin by remember { mutableStateOf(Offset.Zero) }
+    var screenWidth by remember { mutableStateOf(0) }
+    var screenHeight by remember { mutableStateOf(0) }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val currentOnMove by androidx.compose.runtime.rememberUpdatedState(onMove)
+    // no Pick a day and no drag while any task write runs: a day picked then would have nowhere to go
+    val writing = state.taskSaving != null
+    Box(Modifier.fillMaxSize().onGloballyPositioned { screenOrigin = it.positionInRoot(); screenWidth = it.size.width; screenHeight = it.size.height }) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().background(MaterialTheme.colorScheme.background)) {
+            AppTopBar(stringResource(R.string.tasks_title), back = true, onNav = onBack)
+            // the strip lies over the list while dragging. No padding at the top for it: that would push the list down under the finger.
+            // Room at the bottom only lets the last rows scroll clear of a bottom strip; the list does not move.
+            val bottomStrip = drag?.stripOnTop == false
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = if (bottomStrip) 200.dp else 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item {
+                    Text(stringResource(R.string.tasks_hint), Modifier.padding(horizontal = 12.dp, vertical = 4.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (groups.isEmpty()) item {
+                    Text(stringResource(R.string.tasks_empty), Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                for ((calId, list) in groups) {
+                    val cal = cals[calId]
+                    item(key = "list|$calId") {
+                        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(10.dp).clip(CircleShape).background(taskListColor(cal)))
+                            Spacer(Modifier.size(8.dp))
+                            Text(cal?.name.orEmpty(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    items(list, key = { it.key }) { t ->
+                        val movable = state.taskMovability[t.key] == TaskEditability.Editable
+                        val task by androidx.compose.runtime.rememberUpdatedState(t)
+                        var rowOrigin by remember { mutableStateOf(Offset.Zero) }
+                        val canDrag = movable && !writing
+                        Box(
+                            Modifier.fillMaxWidth()
+                                .then(if (ownsDrag(drag, t.key)) Modifier.border(2.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(16.dp)) else Modifier)
+                                .onGloballyPositioned { rowOrigin = it.positionInRoot() }
+                                .then(
+                                    if (!canDrag) Modifier
+                                    else Modifier.pointerInput(t.key) {
+                                        // only the row that started the drag moves or ends it: a second finger on another row changes nothing
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = { at ->
+                                                val p = rowOrigin + at
+                                                val started = dev.bookah.calendar.beginDrag(drag, task, p.x, p.y, (screenOrigin.y + screenHeight).toFloat())
+                                                if (started != null) {
+                                                    boxes.clear()
+                                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                                    drag = started
+                                                }
+                                            },
+                                            onDrag = { change, amount ->
+                                                if (ownsDrag(drag, task.key)) { change.consume(); drag = drag?.moveBy(task.key, amount.x, amount.y) }
+                                            },
+                                            onDragEnd = {
+                                                if (ownsDrag(drag, task.key)) {
+                                                    val d = drag
+                                                    val day = dev.bookah.calendar.dropDay(d, task.key, boxes.values.toList(), viewConfiguration.touchSlop)
+                                                    drag = null
+                                                    if (d != null && day != null) currentOnMove(d.task, day)
+                                                }
+                                            },
+                                            onDragCancel = { if (ownsDrag(drag, task.key)) drag = null },
+                                        )
+                                    },
+                                ),
+                        ) {
+                            // a task that cannot be given a day here has no Pick a day button (its page says why)
+                            TickableTaskRow(
+                                t, cal, zone, now, today, state, { onOpenTask(t) }, { onTick(t) },
+                                trailing = if (!movable) null else { ink -> PickDayButton(t, ink, enabled = !writing) { picking = t } },
+                            )
+                        }
                     }
                 }
-                items(list, key = { it.key }) { t -> TickableTaskRow(t, cal, zone, now, today, state, { onOpenTask(t) }, { onTick(t) }) }
+            }
+        }
+        drag?.let { d ->
+            val hovered = dev.bookah.calendar.dayAt(boxes.values.toList(), d.x, d.y)
+            DayStrip(
+                today, hovered, onBox = { boxes[it.date] = it },
+                // at the top when the drag started in the lower half, so the strip never appears under the finger
+                modifier = Modifier.align(if (d.stripOnTop) Alignment.TopCenter else Alignment.BottomCenter).safeDrawingPadding()
+                    .padding(start = 12.dp, end = 12.dp, top = if (d.stripOnTop) 64.dp else 12.dp, bottom = 12.dp),
+            )
+            // the task follows the finger, a little above it so the finger does not hide it, and never leaves the screen at the sides
+            Box(
+                Modifier.offset {
+                    val w = 240.dp.roundToPx()
+                    val x = ((d.x - screenOrigin.x).toInt() - 60.dp.roundToPx()).coerceIn(0, maxOf(0, screenWidth - w))
+                    IntOffset(x, (d.y - screenOrigin.y).toInt() - 72.dp.roundToPx())
+                }
+                    .widthIn(max = 240.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.onBackground).padding(horizontal = 14.dp, vertical = 10.dp),
+            ) {
+                Text(d.task.title.ifBlank { stringResource(R.string.no_title) }, color = MaterialTheme.colorScheme.background, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp)
             }
         }
     }
+    picking?.let { t ->
+        PickDayDialog(today, onPick = { day -> picking = null; onMove(t, day) }, onDismiss = { picking = null })
+    }
+}
+
+/** "Pick a day" at the end of an undated pill: a 48 dp button in the pill's writing colour ([ink]), spoken "Pick a day: <title>". */
+@Composable
+private fun PickDayButton(task: TaskItem, ink: Color, enabled: Boolean, onClick: () -> Unit) {
+    val spoken = stringResource(R.string.task_pick_day_description, task.title.ifBlank { stringResource(R.string.no_title) })
+    IconButton(onClick, enabled = enabled, modifier = Modifier.semantics { contentDescription = spoken }) {
+        Icon(Icons.Default.DateRange, contentDescription = null, tint = if (enabled) ink else ink.copy(alpha = 0.4f))
+    }
+}
+
+/**
+ * The drop targets while a task is dragged: Today and Tomorrow wide on top, the next five days below. Each reports where it is on screen
+ * ([onBox]); the one under the finger ([hovered]) is filled.
+ */
+@Composable
+private fun DayStrip(today: LocalDate, hovered: LocalDate?, onBox: (dev.bookah.calendar.DropBox) -> Unit, modifier: Modifier = Modifier) {
+    val locale = rememberTexts().locale
+    val days = dev.bookah.calendar.dropDays(today)
+    val weekday = DateTimeFormatter.ofPattern("EEE", locale)
+    val dayMonth = DateTimeFormatter.ofPattern("d MMM", locale)
+    Column(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)).padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(stringResource(R.string.task_drop_hint), Modifier.padding(horizontal = 4.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        @Composable fun Target(date: LocalDate, top: String, bottom: String, mod: Modifier) {
+            val on = date == hovered
+            Column(
+                mod.heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp))
+                    .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+                    .onGloballyPositioned { c -> val b = c.boundsInRoot(); onBox(dev.bookah.calendar.DropBox(date, b.left, b.top, b.right, b.bottom)) }
+                    .padding(vertical = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+            ) {
+                val ink = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
+                Text(top, fontSize = 13.sp, color = ink, fontWeight = FontWeight.Medium, maxLines = 1)
+                Text(bottom, fontSize = 12.sp, color = ink, maxLines = 1)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Target(days[0], stringResource(R.string.today), dayMonth.format(days[0]), Modifier.weight(1f))
+            Target(days[1], stringResource(R.string.task_tomorrow), dayMonth.format(days[1]), Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for (d in days.drop(2)) Target(d, weekday.format(d), d.dayOfMonth.toString(), Modifier.weight(1f))
+        }
+    }
+}
+
+/** The app's date picker for giving a task a day: from today to the last day the app loads (so the task lands on a day it shows). */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun PickDayDialog(today: LocalDate, onPick: (LocalDate) -> Unit, onDismiss: () -> Unit) {
+    val end = dev.bookah.calendar.loadedWindow(today).end
+    val st = androidx.compose.material3.rememberDatePickerState(
+        initialSelectedDateMillis = today.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
+        yearRange = today.year..end.year,
+        selectableDates = object : androidx.compose.material3.SelectableDates {
+            // the picker's millis are UTC midnight of the date (as in the event form): read them in UTC, never in the phone's zone
+            override fun isSelectableDate(utcTimeMillis: Long) = dev.bookah.calendar.pickableDay(LocalDate.ofEpochDay(Math.floorDiv(utcTimeMillis, 86_400_000L)), today)
+            override fun isSelectableYear(year: Int) = year in today.year..end.year
+        },
+    )
+    androidx.compose.material3.DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton({
+                st.selectedDateMillis?.let { ms -> onPick(Instant.ofEpochMilli(ms).atZone(java.time.ZoneOffset.UTC).toLocalDate()) } ?: onDismiss()
+            }) { Text(stringResource(R.string.event_ok)) }
+        },
+        dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.event_cancel)) } },
+    ) { androidx.compose.material3.DatePicker(st, title = { Text(stringResource(R.string.task_pick_day), Modifier.padding(start = 24.dp, top = 16.dp)) }) }
 }
 
 /**
@@ -208,11 +403,16 @@ fun TasksScreen(state: UiState, onBack: () -> Unit, onOpenTask: (TaskItem) -> Un
 fun TaskPage(
     task: TaskItem, calendar: CalendarInfo?, parentTitle: String?, onDismiss: () -> Unit,
     editability: TaskEditability? = null, saving: Boolean = false, onMarkDone: () -> Unit = {},
+    /** For a task without a date: may it be given a day here ("Pick a day")? Null for a dated task. */
+    movability: TaskEditability? = null, onPickDay: (LocalDate) -> Unit = {},
+    /** Some task write (of any task) is running: Pick a day waits. */
+    writing: Boolean = saving,
 ) {
     val zone = ZoneId.systemDefault()
     val locale = rememberTexts().locale
     val context = LocalContext.current
     var missing by remember(task.key) { mutableStateOf(false) }
+    var picking by remember(task.key) { mutableStateOf(false) }
     val today = LocalDate.now(zone)
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHigh).safeDrawingPadding()
@@ -244,21 +444,51 @@ fun TaskPage(
             if (calendar != null) Text(calendar.name + if (readOnlyList) "  ·  " + stringResource(R.string.read_only) else "", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             task.url?.let { url -> TaskLink(url) }
             task.notes?.let { Text(it, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface) }
+            val movable = movability == TaskEditability.Editable
             when (editability) {
                 TaskEditability.Editable -> {
-                    Button(onMarkDone, Modifier.heightIn(min = 48.dp), enabled = !saving) {
-                        if (saving) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary); Spacer(Modifier.size(8.dp)) }
-                        Text(stringResource(if (saving) R.string.task_saving else R.string.task_mark_done))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Button(onMarkDone, Modifier.heightIn(min = 48.dp), enabled = !saving) {
+                            if (saving) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary); Spacer(Modifier.size(8.dp)) }
+                            Text(stringResource(if (saving) R.string.task_saving else R.string.task_mark_done))
+                        }
+                        if (movable) PickDayPageButton(enabled = !writing) { picking = true }
                     }
-                    Text(stringResource(R.string.task_read_only_note), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(if (movable) R.string.task_move_note else R.string.task_read_only_note), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 is TaskEditability.ReadOnly -> Text(stringResource(taskHint(editability.reason)), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 // no button here (a finished task, or one not judged yet): do not promise a tick
                 null -> Text(stringResource(R.string.task_page_note_other), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            OutlinedButton({ missing = !openBookahTasks(context) }, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.task_open_in_tasks)) }
+            // a task without a date that cannot be ticked here may still be given a day (a parent with open subtasks, for example)
+            if (movable && editability != TaskEditability.Editable) PickDayPageButton(enabled = !writing) { picking = true }
+            moveHint(movability, editability)?.let { Text(stringResource(it), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            OutlinedButton({ missing = !openTaskInBookahTasks(context, task.uid, calendar?.href) }, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.task_open_in_tasks)) }
             if (missing) Text(stringResource(R.string.task_tasks_missing), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+    if (picking) PickDayDialog(today, onPick = { day -> picking = false; onPickDay(day) }, onDismiss = { picking = false })
+}
+
+@Composable
+private fun PickDayPageButton(enabled: Boolean, onClick: () -> Unit) =
+    OutlinedButton(onClick, Modifier.heightIn(min = 48.dp), enabled = enabled) {
+        Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(8.dp))
+        Text(stringResource(R.string.task_pick_day))
+    }
+
+/**
+ * Why a task without a date cannot be given a day here, when the tick's hint does not already say it: parked tasks always (they are dated in
+ * BookahTasks), others only when the task can be ticked (otherwise the page already sends the owner to BookahTasks).
+ */
+private fun moveHint(movability: TaskEditability?, editability: TaskEditability?): Int? {
+    val reason = (movability as? TaskEditability.ReadOnly)?.reason ?: return null
+    return when {
+        reason == TaskReadOnlyReason.Parked -> R.string.task_hint_parked
+        reason == TaskReadOnlyReason.ReadOnlyList -> null
+        editability == TaskEditability.Editable -> R.string.task_move_hint_other
+        else -> null
     }
 }
 
@@ -268,7 +498,8 @@ private fun taskHint(reason: TaskReadOnlyReason): Int = when (reason) {
     TaskReadOnlyReason.OpenSubtasks -> R.string.task_hint_subtasks
     TaskReadOnlyReason.ReadOnlyList -> R.string.task_hint_read_only_list
     TaskReadOnlyReason.WithPeople -> R.string.task_hint_people
-    TaskReadOnlyReason.Unusual, TaskReadOnlyReason.NotATask, TaskReadOnlyReason.Finished -> R.string.task_hint_other
+    TaskReadOnlyReason.Parked -> R.string.task_hint_parked
+    TaskReadOnlyReason.Unusual, TaskReadOnlyReason.NotATask, TaskReadOnlyReason.Finished, TaskReadOnlyReason.HasDates -> R.string.task_hint_other
 }
 
 /**
@@ -302,6 +533,10 @@ fun TaskBarHost(bar: TaskBar?, undoSaving: Boolean, onUndo: () -> Unit, onDismis
         is TaskBar.Done -> Snackbar(spoken, action = { BarButton(R.string.task_undo, onUndo) }, containerColor = barColor, contentColor = onBar) {
             Text(stringResource(R.string.task_done_bar))
         }
+        is TaskBar.Moved -> Snackbar(spoken, action = { BarButton(R.string.task_undo, onUndo) }, containerColor = barColor, contentColor = onBar) {
+            val locale = rememberTexts().locale
+            Text(stringResource(R.string.task_moved_bar, DateTimeFormatter.ofPattern("EEE d MMM", locale).format(bar.date)))
+        }
         is TaskBar.Message -> Snackbar(spoken, action = { BarButton(R.string.event_ok) { onDismiss(bar.id) } }, containerColor = barColor, contentColor = onBar) {
             Text(
                 stringResource(
@@ -314,6 +549,11 @@ fun TaskBarHost(bar: TaskBar?, undoSaving: Boolean, onUndo: () -> Unit, onDismis
                         TaskNote.MaybeSaved -> R.string.task_maybe_saved
                         TaskNote.AlreadyDone -> R.string.task_already_done
                         TaskNote.AlreadyOpen -> R.string.task_already_open
+                        TaskNote.AlreadyDated -> R.string.task_already_dated
+                        TaskNote.MoveRefused -> R.string.task_move_refused
+                        TaskNote.UndoRefused -> R.string.task_undo_refused
+                        TaskNote.PickAgain -> R.string.task_pick_again
+                        TaskNote.Busy -> R.string.task_busy
                     },
                 ),
             )
@@ -335,9 +575,35 @@ private fun TaskLink(url: String) {
     )
 }
 
+/**
+ * Opens this one task in BookahTasks with its link ([dev.bookah.calendar.bookahTasksLink]: the task's UID and its list's href). The link is
+ * given to BookahTasks only (setPackage). The list's href holds the Nextcloud user name, so it is put in the link only when the installed
+ * BookahTasks is signed with BookahTasks' own release certificate ([bookahTasksIsGenuine]); otherwise the link carries the UID alone. No link
+ * (a UID over 1024 characters, a link over 4096) or a BookahTasks without it (an older one): BookahTasks is simply started; false when it is
+ * not installed at all. The link is never logged.
+ */
+fun openTaskInBookahTasks(context: Context, uid: String, listHref: String?): Boolean {
+    val list = listHref?.takeIf { bookahTasksIsGenuine(context) }
+    val link = dev.bookah.calendar.bookahTasksLink(uid, list)
+    if (link != null) {
+        val view = Intent(Intent.ACTION_VIEW, Uri.parse(link)).setPackage(dev.bookah.calendar.TASKS_PACKAGE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // ActivityNotFoundException when BookahTasks is missing or has no such link yet: then the plain start below
+        if (runCatching { context.startActivity(view) }.isSuccess) return true
+    }
+    return openBookahTasks(context)
+}
+
+/** Is the installed BookahTasks signed with BookahTasks' release certificate? False when it is missing, signed otherwise (a debug build), or unknown. */
+fun bookahTasksIsGenuine(context: Context): Boolean = runCatching {
+    context.packageManager.hasSigningCertificate(
+        dev.bookah.calendar.TASKS_PACKAGE, dev.bookah.calendar.fingerprintBytes(dev.bookah.calendar.BOOKAH_TASKS_CERT_SHA256),
+        android.content.pm.PackageManager.CERT_INPUT_SHA256,
+    )
+}.getOrDefault(false)
+
 /** Starts BookahTasks. False when it is not installed (or cannot be started): the page then says so instead of crashing. */
 fun openBookahTasks(context: Context): Boolean = runCatching {
-    val launch = context.packageManager.getLaunchIntentForPackage(TASKS_PACKAGE) ?: return false
+    val launch = context.packageManager.getLaunchIntentForPackage(dev.bookah.calendar.TASKS_PACKAGE) ?: return false
     context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     true
 }.getOrDefault(false)

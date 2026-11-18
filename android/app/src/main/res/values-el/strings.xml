@@ -283,7 +283,7 @@
     <string name="source_task_lists">Λίστες εργασιών</string>
     <string name="tasks_title">Εργασίες χωρίς ημερομηνία</string>
     <string name="tasks_empty">Δεν υπάρχουν ανοιχτές εργασίες χωρίς ημερομηνία.</string>
-    <string name="tasks_hint">Οι εργασίες με ημερομηνία εμφανίζονται στη μέρα τους σε κάθε προβολή. Πάτα τον κύκλο για να τσεκάρεις μια εργασία· οι άλλες αλλαγές γίνονται στο BookahTasks.</string>
+    <string name="tasks_hint">Οι εργασίες με ημερομηνία εμφανίζονται στη μέρα τους σε κάθε προβολή. Πάτα το τετραγωνάκι για να τσεκάρεις μια εργασία ή το κουμπί ημερολογίου για να της δώσεις μέρα (ή κράτησε πατημένη μια εργασία και σύρε τη σε μια μέρα). Οι άλλες αλλαγές γίνονται στο BookahTasks.</string>
     <string name="task_glyph">Εργασία</string>
     <string name="task_due">Προθεσμία: %1$s</string>
     <string name="task_start">Έναρξη: %1$s</string>
@@ -319,6 +319,20 @@
     <string name="task_already_done">Αυτή η εργασία έχει ήδη ολοκληρωθεί.</string>
     <string name="task_already_open">Αυτή η εργασία είναι ήδη ξανά ανοιχτή.</string>
     <string name="task_page_note_other">Οι εργασίες αλλάζουν στο BookahTasks.</string>
+    <!-- Μέρα σε εργασία χωρίς ημερομηνία (Φάση 4, μέρος 3) -->
+    <string name="task_pick_day">Επιλογή μέρας</string>
+    <string name="task_pick_day_description">Επιλογή μέρας: %1$s</string>
+    <string name="task_moved_bar">Η εργασία μεταφέρθηκε: %1$s</string>
+    <string name="task_move_note">Εδώ μπορείς να τσεκάρεις μια εργασία ή να της δώσεις μέρα. Κάθε άλλη αλλαγή γίνεται στο BookahTasks.</string>
+    <string name="task_hint_parked">Αυτή η εργασία έχει μπει στην άκρη για «Κάποτε» στο BookahTasks. Δώσε της μέρα εκεί.</string>
+    <string name="task_move_hint_other">Δώσε μέρα σε αυτή την εργασία στο BookahTasks.</string>
+    <string name="task_already_dated">Αυτή η εργασία έχει ήδη ημερομηνία. Δεν άλλαξε τίποτα.</string>
+    <string name="task_move_refused">Σε αυτή την εργασία δεν μπαίνει μέρα από εδώ. Άνοιξέ τη στο BookahTasks.</string>
+    <string name="task_drop_hint">Άφησέ τη σε μια μέρα</string>
+    <string name="task_tomorrow">Αύριο</string>
+    <string name="task_undo_refused">Η αναίρεση δεν έγινε: η εργασία δεν είναι πια όπως την άφησε αυτή η εφαρμογή. Δεν άλλαξε τίποτα.</string>
+    <string name="task_pick_again">Αυτή η μέρα δεν μπορεί πια να επιλεγεί. Διάλεξε ξανά μέρα.</string>
+    <string name="task_busy">Μια άλλη αλλαγή αποθηκεύεται ακόμη. Διάλεξε ξανά μέρα σε λίγο.</string>
     <plurals name="month_tile_tasks">
         <item quantity="one">%1$d εργασία</item>
         <item quantity="other">%1$d εργασίες</item>

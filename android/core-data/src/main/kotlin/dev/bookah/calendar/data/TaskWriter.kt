@@ -28,6 +28,12 @@ enum class TaskReadOnlyReason {
 
     /** Already finished (for a tick) or already open again (for an undo). */
     Finished,
+
+    /** Parked for "someday" in BookahTasks (CATEGORIES someday): it is given a day there, not here. Only stops a move. */
+    Parked,
+
+    /** Has a start or a deadline already (only an undated task is given a day here), or, for an undo, is no longer the date this app wrote. */
+    HasDates,
 }
 
 /** Can the app tick this task? Judged on the whole stored object, like [IcsEdit.editability] for events. */
@@ -63,8 +69,11 @@ sealed interface TaskEditability {
         private val TICK_LINES = setOf("STATUS", "COMPLETED", "PERCENT-COMPLETE", "DTSTAMP", "LAST-MODIFIED", "SEQUENCE")
 
         /** True when [before] and [after] have the same logical lines, folds included, once the tick's own lines are left out of both. */
-        internal fun onlyTickLinesDiffer(before: String, after: String): Boolean {
-            fun rest(ics: String) = IcsEdit.logicalLines(ics).filter { IcsEdit.name(it) !in TICK_LINES }
+        internal fun onlyTickLinesDiffer(before: String, after: String): Boolean = onlyLinesDiffer(before, after, TICK_LINES)
+
+        /** True when [before] and [after] have the same logical lines, folds included, once the lines named in [allowed] are left out of both. */
+        internal fun onlyLinesDiffer(before: String, after: String, allowed: Set<String>): Boolean {
+            fun rest(ics: String) = IcsEdit.logicalLines(ics).filter { IcsEdit.name(it) !in allowed }
             return rest(before) == rest(after)
         }
 
@@ -149,7 +158,8 @@ sealed interface TaskWriteResult {
 }
 
 /**
- * Ticks a task off on the server, and takes a tick back (undo), keeping the phone's copy in step. Online only: there is no outbox. The same
+ * Ticks a task off on the server, and takes a tick back (undo); gives an undated task a day and takes that back ([setDay], [clearDay]); keeping
+ * the phone's copy in step. Online only: there is no outbox. The same
  * rules as [EventWriter]: If-Match with the ETag we read, the ETag kept is always the server's own, 412 means somebody else changed it
  * (nothing is overwritten; the phone takes their version), 404 means it is gone. The caller holds the sync lock and makes one write at a time.
  */
@@ -179,10 +189,36 @@ class TaskWriter(
         save(current, TaskDone.reopen(current.ics, clock(), before), ifMatch = expectedEtag)
     }
 
-    private fun refusal(obj: StoredObject, checkSubtasks: Boolean): TaskWriteResult.Refused? {
+    /**
+     * Gives a task WITHOUT any date the day [date] (a date-only start, as BookahTasks writes it; see [TaskMove]), using the version in the phone's
+     * copy now. Only a task [TaskMove.editability] allows: plain, open, not parked, no date of any kind.
+     */
+    suspend fun setDay(href: String, date: java.time.LocalDate): TaskWriteResult = guard {
+        val current = store.objectByHref(href) ?: return@guard TaskWriteResult.Gone
+        (TaskMove.editability(current.ics, listWritable(current)) as? TaskEditability.ReadOnly)?.let { return@guard TaskWriteResult.Refused(it.reason) }
+        save(current, TaskMove.setDay(current.ics, date, clock()), ifMatch = current.etag)
+    }
+
+    /**
+     * Undo of [setDay]: "no dates" again, but only if the task is still exactly the version the move wrote ([expectedEtag], from its
+     * [TaskWriteResult.Saved]) and still has the start the move wrote for [date]. Otherwise nothing is written ([TaskWriteResult.Conflict]).
+     */
+    suspend fun clearDay(href: String, expectedEtag: String, date: java.time.LocalDate): TaskWriteResult = guard {
+        val current = store.objectByHref(href) ?: return@guard TaskWriteResult.Gone
+        if (current.etag != expectedEtag) return@guard conflictOrGone(current)
+        (TaskEditability.of(current.ics, listWritable(current)) as? TaskEditability.ReadOnly)?.let { return@guard TaskWriteResult.Refused(it.reason) }
+        if (!TaskMove.isOurMove(current.ics, date)) return@guard TaskWriteResult.Refused(TaskReadOnlyReason.HasDates)
+        save(current, TaskMove.clearDay(current.ics, clock()), ifMatch = expectedEtag)
+    }
+
+    /** Its own list check, not EventWriter's: that one refuses every task-only list (events cannot go there), which is exactly where tasks live. */
+    private fun listWritable(obj: StoredObject): Boolean {
         val calendar = store.calendars().firstOrNull { it.id == obj.calendarId }
-        // not EventWriter's check: that one refuses every task-only list (events cannot go there), which is exactly where tasks live
-        val writable = calendar != null && calendar.source == Source.Nextcloud && calendar.editable && calendar.kind.holdsTasks
+        return calendar != null && calendar.source == Source.Nextcloud && calendar.editable && calendar.kind.holdsTasks
+    }
+
+    private fun refusal(obj: StoredObject, checkSubtasks: Boolean): TaskWriteResult.Refused? {
+        val writable = listWritable(obj)
         val subtasks = checkSubtasks && writable && hasOpenSubtasks(obj)
         return (TaskEditability.of(obj.ics, writable, subtasks) as? TaskEditability.ReadOnly)?.let { TaskWriteResult.Refused(it.reason) }
     }

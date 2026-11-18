@@ -197,7 +197,7 @@ private fun GridPage(
                             )
                         }
                         for (t in tasks.take((3 - list.size).coerceAtLeast(0))) {
-                            val chip = ChipColor.forCalendar(taskListColor(colors[t.calendarId]))
+                            val chip = taskChipColor(colors[t.calendarId])
                             val label = listOfNotNull(dev.bookah.calendar.taskTimeText(t, zone), t.title.ifBlank { stringResource(R.string.no_title) }).joinToString(" ")
                             Row(
                                 Modifier.fillMaxWidth().height(20.dp).clip(RoundedCornerShape(4.dp)).background(chip.fill).clickable { onOpenTask(t) }.padding(horizontal = 3.dp),

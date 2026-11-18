@@ -119,8 +119,9 @@ private fun DayRow(
                     Text(stringResource(R.string.quiet_day), Modifier.padding(top = 10.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
                 for (e in day.events) EventCard(e, calendars[e.calendarId], day.date, zone) { onOpenEvent(e) }
-                // the day's open tasks as quiet lines under its events: the round mark ticks a plain task, the rest of the row opens the task page
-                if (day.tasks.isNotEmpty()) Column {
+                // the day's open tasks as pills under its events, in their list's colour like event cards: the checkbox ticks a plain task, the
+                // rest of the pill opens the task page
+                if (day.tasks.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     for (t in day.tasks) androidx.compose.runtime.key(t.key) { TickableTaskRow(t, calendars[t.calendarId], zone, now, today, state, { onOpenTask(t) }, { onTick(t) }) }
                 }
             }

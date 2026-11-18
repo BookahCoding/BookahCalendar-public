@@ -8,9 +8,14 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- "Open in BookahTasks" on a task page: Android 11+ hides other apps unless they are named here. Nothing is sent to it. -->
+    <!-- "Open in BookahTasks" on a task page: Android 11+ hides other apps unless they are named here. The link bookahtasks://task?uid=...&list=...
+         (the task's UID and its list's address on the server) is given to BookahTasks only (the intent names its package); nothing else is sent. -->
     <queries>
         <package android:name="dev.bookah.tasks" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="bookahtasks" />
+        </intent>
     </queries>
 
     <!-- allowBackup is off: the encrypted password cannot be restored on another phone, so the owner signs in again there. -->

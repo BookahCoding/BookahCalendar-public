@@ -68,6 +68,8 @@ class TaskTicksTest {
         // "finished" means already done for a tick, already open again for an undo
         assertEquals(TaskNote.AlreadyDone, taskNote(TaskWriteResult.Refused(TaskReadOnlyReason.Finished), undo = false))
         assertEquals(TaskNote.AlreadyOpen, taskNote(TaskWriteResult.Refused(TaskReadOnlyReason.Finished), undo = true))
+        // an undo refused for another reason says the undo was not done (not "cannot be ticked")
+        assertEquals(TaskNote.UndoRefused, taskNote(TaskWriteResult.Refused(TaskReadOnlyReason.ReadOnlyList), undo = true))
     }
 
     @Test fun afterATickTheBarCarriesWhatTheUndoNeeds() {

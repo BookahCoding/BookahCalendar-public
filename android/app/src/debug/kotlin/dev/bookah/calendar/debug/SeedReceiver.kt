@@ -157,9 +157,17 @@ private fun seedTasks(graph: dev.bookah.calendar.AppGraph) {
         // in progress at 40 percent: an undo of its tick must bring back exactly that
         "t-inprocess" to todo("t-inprocess@invalid", "Generated task in progress", "DUE;VALUE=DATE:${date(today)}", "STATUS:IN-PROCESS", "PERCENT-COMPLETE:40"),
         "t-child-done" to todo("t-child-done@invalid", "Generated finished subtask", "RELATED-TO:t-parent-done@invalid", "STATUS:COMPLETED", "COMPLETED:20260101T000000Z"),
+        // slice 3 (give an undated task a day): parked for Someday in BookahTasks (never moved here: the page says so), and an undated task with
+        // an alarm and an X- line of another app (both must survive the move and its undo byte for byte)
+        "t-parked" to todo("t-parked@invalid", "Generated parked task", "CATEGORIES:Home,someday"),
+        "t-undated-alarm" to todo("t-undated-alarm@invalid", "Generated undated task with an alarm", "X-GENERATED-APP:kept",
+            "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:r", "TRIGGER;RELATED=START:-PT15M", "END:VALARM"),
     ).map { (name, ics) -> RemoteObject("${tasks.href}$name.ics", "t-$name", ics) }
     graph.store.upsertObjects(tasks.id, taskObjects)
-    graph.store.upsertObjects(shared.id, listOf(RemoteObject("${shared.href}s-shared.ics", "s1", todo("s-shared@invalid", "Generated shared read-only task", "DUE;VALUE=DATE:${date(today)}"))))
+    graph.store.upsertObjects(shared.id, listOf(
+        RemoteObject("${shared.href}s-shared.ics", "s1", todo("s-shared@invalid", "Generated shared read-only task", "DUE;VALUE=DATE:${date(today)}")),
+        RemoteObject("${shared.href}s-undated.ics", "s2", todo("s-undated@invalid", "Generated shared task without a date")),
+    ))
     val mixedObjects = listOf(
         RemoteObject("${mixed.href}m-undated.ics", "m1", todo("m-undated@invalid", "Generated mixed-list task without a date")),
         RemoteObject("${mixed.href}m-dated.ics", "m2", todo("m-dated@invalid", "Generated mixed-list task", "DUE:${at(today.plusDays(1), 10, 0)}")),

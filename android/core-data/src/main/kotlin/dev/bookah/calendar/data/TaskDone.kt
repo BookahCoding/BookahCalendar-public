@@ -34,7 +34,81 @@ object TaskDone {
 }
 
 /**
- * Line-by-line edits of a task's stored text, copied from BookahTasks' IcsPatcher (only the parts the tick needs; the two apps stay separate).
+ * Giving a task WITHOUT any date a day from the calendar, and taking it back (undo). Written exactly as BookahTasks writes it when an undated task
+ * is given a date (its Reschedule.plan sets a new start, TaskEdit.setDates writes it): DTSTART;VALUE=DATE:<yyyyMMdd>, no DUE, then DTSTAMP and
+ * LAST-MODIFIED to now and SEQUENCE one higher. Undo takes DTSTART away again (plus the same touch): "no dates", as before.
+ */
+object TaskMove {
+    private val DATE = java.time.format.DateTimeFormatter.BASIC_ISO_DATE
+    private val MOVE_LINES = setOf("DTSTART", "DUE", "DTSTAMP", "LAST-MODIFIED", "SEQUENCE")
+
+    fun setDay(ics: String, date: java.time.LocalDate, now: Instant): String =
+        TaskPatch.touch(TaskPatch.setProperty(TaskPatch.setProperty(ics, "DTSTART", DATE.format(date), params = "VALUE=DATE"), "DUE", null), now)
+
+    fun clearDay(ics: String, now: Instant): String =
+        TaskPatch.touch(TaskPatch.setProperty(TaskPatch.setProperty(ics, "DTSTART", null), "DUE", null), now)
+
+    /** True when the task's start is exactly the date-only line [setDay] writes for [date] and it has no deadline (the version an undo may take back). */
+    fun isOurMove(ics: String, date: java.time.LocalDate): Boolean = runCatching {
+        TaskPatch.readLine(ics, "DTSTART")?.uppercase() == "DTSTART;VALUE=DATE:" + DATE.format(date) && TaskPatch.readLine(ics, "DUE") == null
+    }.getOrDefault(false)
+
+    /**
+     * A start (DTSTART) or deadline (DUE) line in the task itself, read from the text: a date the calendar could not read still counts.
+     * A DURATION line is not looked at here; [editability] refuses it on its own.
+     */
+    fun hasDates(ics: String): Boolean = TaskPatch.readLine(ics, "DTSTART") != null || TaskPatch.readLine(ics, "DUE") != null
+
+    /** Parked for "someday" in BookahTasks: a CATEGORIES tag "someday" (any case, in any CATEGORIES line). */
+    fun isParked(ics: String): Boolean = runCatching {
+        TaskPatch.readAllProperties(ics, "CATEGORIES").flatMap { splitTags(it) }.any { it.equals("someday", ignoreCase = true) }
+    }.getOrDefault(false)
+
+    /**
+     * May this task be given a day here? The same plain-task rules as the tick ([TaskEditability.of]: one VTODO, not repeating, no people, a
+     * writable list; open subtasks do not matter for a date), and it must be open, not parked, and have no date of any kind. Last, a trial move
+     * and undo must change nothing but the move's own lines.
+     */
+    fun editability(ics: String, listWritable: Boolean): TaskEditability {
+        val base = TaskEditability.of(ics, listWritable, hasOpenSubtasks = false)
+        if (base is TaskEditability.ReadOnly) return base
+        if (TaskEditability.isFinished(ics)) return TaskEditability.ReadOnly(TaskReadOnlyReason.Finished)
+        if (isParked(ics)) return TaskEditability.ReadOnly(TaskReadOnlyReason.Parked)
+        val dated = runCatching { hasDates(ics) }.getOrNull() ?: return TaskEditability.ReadOnly(TaskReadOnlyReason.Unusual)
+        if (dated) return TaskEditability.ReadOnly(TaskReadOnlyReason.HasDates)
+        // a duration needs a start; giving one a start would quietly give it an end too
+        if (TaskPatch.readLine(ics, "DURATION") != null) return TaskEditability.ReadOnly(TaskReadOnlyReason.Unusual)
+        val ok = runCatching {
+            val probe = java.time.LocalDate.of(2000, 1, 1)
+            val moved = setDay(ics, probe, Instant.EPOCH)
+            val back = clearDay(moved, Instant.EPOCH)
+            isOurMove(moved, probe) && !hasDates(back) &&
+                TaskEditability.onlyLinesDiffer(ics, moved, MOVE_LINES) && TaskEditability.onlyLinesDiffer(ics, back, MOVE_LINES)
+        }.getOrDefault(false)
+        return if (ok) TaskEditability.Editable else TaskEditability.ReadOnly(TaskReadOnlyReason.Unusual)
+    }
+
+    /** Splits a CATEGORIES value on commas that are not escaped, and unescapes each part (as BookahTasks' TaskEdit). */
+    private fun splitTags(value: String): List<String> {
+        val out = ArrayList<String>()
+        val cur = StringBuilder()
+        var i = 0
+        while (i < value.length) {
+            val c = value[i]
+            when {
+                c == '\\' && i + 1 < value.length -> { cur.append(value[i + 1]); i++ }
+                c == ',' -> { out.add(cur.toString()); cur.setLength(0) }
+                else -> cur.append(c)
+            }
+            i++
+        }
+        out.add(cur.toString())
+        return out.map { it.trim() }.filter { it.isNotEmpty() }
+    }
+}
+
+/**
+ * Line-by-line edits of a task's stored text, copied from BookahTasks' IcsPatcher (only the parts the tick and the move need; the two apps stay separate).
  * Only the lines asked for change; every other line (alarms, X- lines of other apps, odd folding, the newline style) is kept byte for byte.
  * It works on the first VTODO that has no RECURRENCE-ID. Values are written as given.
  */
@@ -117,23 +191,33 @@ object TaskPatch {
         return out
     }
 
-    fun readProperty(ics: String, name: String): String? {
+    fun readProperty(ics: String, name: String): String? = readLine(ics, name)?.substringAfter(':')
+
+    /** The whole first top-level line called [name] of the VTODO, unfolded, parameters included ("DTSTART;VALUE=DATE:20261120"), or null. */
+    fun readLine(ics: String, name: String): String? {
         val doc = parse(ics)
         val (b, e) = todoBounds(doc.lines)
-        val line = topLevel(doc.lines, b, e).map { doc.lines[it] }.firstOrNull { nameOf(it) == name.uppercase() } ?: return null
-        return unfold(line).substringAfter(':')
+        return topLevel(doc.lines, b, e).map { doc.lines[it] }.firstOrNull { nameOf(it) == name.uppercase() }?.let { unfold(it) }
+    }
+
+    /** The values of every top-level line called [name] (a property may repeat: CATEGORIES), in order. */
+    fun readAllProperties(ics: String, name: String): List<String> {
+        val doc = parse(ics)
+        val (b, e) = todoBounds(doc.lines)
+        return topLevel(doc.lines, b, e).map { doc.lines[it] }.filter { nameOf(it) == name.uppercase() }.map { unfold(it).substringAfter(':') }
     }
 
     /**
      * Sets (or, with a null [value], removes) one single-valued property: every other line of the same name is dropped. An existing line is
-     * replaced in place; a new one goes before the first nested block (a reminder), or before END:VTODO.
+     * replaced in place; a new one goes before the first nested block (a reminder), or before END:VTODO. The old line's parameters are
+     * replaced by [params] ("VALUE=DATE"; empty = none), as in BookahTasks' IcsPatcher.
      */
-    fun setProperty(ics: String, name: String, value: String?): String {
+    fun setProperty(ics: String, name: String, value: String?, params: String = ""): String {
         val doc = parse(ics)
         val (begin, end) = todoBounds(doc.lines)
         val key = name.uppercase()
         val mine = topLevel(doc.lines, begin, end).filter { nameOf(doc.lines[it]) == key }
-        val newLine = value?.let { fold("$key:$it", doc.nl) }
+        val newLine = value?.let { fold(key + (if (params.isEmpty()) "" else ";$params") + ":" + it, doc.nl) }
         if (mine.isEmpty()) {
             if (newLine != null) {
                 val firstNested = (begin + 1 until end).firstOrNull { doc.lines[it].uppercase().startsWith("BEGIN:") } ?: end

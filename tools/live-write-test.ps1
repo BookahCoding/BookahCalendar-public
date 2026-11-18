@@ -15,8 +15,12 @@
   -Series runs the repeating-events cycle (LiveSeriesTest). -Tasks runs the task tick cycle (LiveTaskTest): it makes a throw-away TASK list
   bookahtest-<random> (VTODO only), creates one plain task with a raw request, ticks it, undoes the tick, checks a wrong ETag gets 412 and
   that a change elsewhere gives a conflict with nothing written, then removes the list for good (X-NC-CalDAV-No-Trashbin) and checks 0 left.
+  -TaskDates runs the "give an undated task a day" cycle (LiveTaskMoveTest): the same kind of throw-away TASK list, one task WITHOUT a date
+  (with an alarm and an X- line), gives it a day, reads it back (a DATE start, no deadline, alarm and X- line kept), checks a wrong ETag gets
+  412, undoes it (no dates again), checks a change elsewhere gives a conflict and a late undo writes nothing, then removes the list for good
+  (X-NC-CalDAV-No-Trashbin) and checks 0 left.
 #>
-param([switch]$OwnerApproved, [switch]$Series, [switch]$Tasks)
+param([switch]$OwnerApproved, [switch]$Series, [switch]$Tasks, [switch]$TaskDates)
 $ErrorActionPreference = "Stop"
 if (-not $OwnerApproved) { throw "This writes (and removes) a test calendar on the real Nextcloud: run again with -OwnerApproved after the owner has said yes." }
 . "$PSScriptRoot\..\spike\Cred.ps1"
@@ -30,8 +34,8 @@ $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 Push-Location (Join-Path $PSScriptRoot "..\android")
 try {
     # -Series runs the repeating-events cycle (phase 4) instead of the plain-event cycle (phase 3)
-    # -Tasks runs the task tick and undo cycle (phase 4, tasks slice 2)
-    $testClass = if ($Tasks) { "dev.bookah.calendar.data.LiveTaskTest" } elseif ($Series) { "dev.bookah.calendar.data.LiveSeriesTest" } else { "dev.bookah.calendar.data.LiveWriteTest" }
+    # -Tasks runs the task tick and undo cycle (phase 4, tasks slice 2); -TaskDates the give-a-day and undo cycle (tasks slice 3)
+    $testClass = if ($TaskDates) { "dev.bookah.calendar.data.LiveTaskMoveTest" } elseif ($Tasks) { "dev.bookah.calendar.data.LiveTaskTest" } elseif ($Series) { "dev.bookah.calendar.data.LiveSeriesTest" } else { "dev.bookah.calendar.data.LiveWriteTest" }
     & .\gradlew.bat --no-daemon :core-data:testDebugUnitTest --tests $testClass -i 2>&1 | Select-String -Pattern "^\s*LIVE |FAILED|BUILD (SUCCESSFUL|FAILED)|AssertionError" | ForEach-Object { $_.Line.Trim() }
     Write-Host "gradle exit code: $LASTEXITCODE"
 } finally {

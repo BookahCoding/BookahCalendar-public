@@ -286,7 +286,7 @@
     <string name="source_task_lists">Task lists</string>
     <string name="tasks_title">Tasks without a date</string>
     <string name="tasks_empty">No open tasks without a date.</string>
-    <string name="tasks_hint">Tasks with a date are shown on their day in every view. Tap the circle to tick a task off; other changes are made in BookahTasks.</string>
+    <string name="tasks_hint">Tasks with a date are shown on their day in every view. Tap the checkbox to tick a task off, or the calendar button to give it a day (or hold a task and drag it onto a day). Other changes are made in BookahTasks.</string>
     <string name="task_glyph">Task</string>
     <string name="task_due">Deadline: %1$s</string>
     <string name="task_start">Start: %1$s</string>
@@ -322,6 +322,20 @@
     <string name="task_already_done">This task is already done.</string>
     <string name="task_already_open">This task is already open again.</string>
     <string name="task_page_note_other">Tasks are changed in BookahTasks.</string>
+    <!-- Giving an undated task a day (Phase 4, slice 3) -->
+    <string name="task_pick_day">Pick a day</string>
+    <string name="task_pick_day_description">Pick a day: %1$s</string>
+    <string name="task_moved_bar">Task moved to %1$s</string>
+    <string name="task_move_note">Here you can tick a task off or give it a day. Every other change is made in BookahTasks.</string>
+    <string name="task_hint_parked">This task is parked for Someday in BookahTasks. Give it a day there.</string>
+    <string name="task_move_hint_other">Give this task a day in BookahTasks.</string>
+    <string name="task_already_dated">This task has a date already. Nothing was changed.</string>
+    <string name="task_move_refused">This task cannot be given a day here. Open it in BookahTasks.</string>
+    <string name="task_drop_hint">Drop on a day</string>
+    <string name="task_tomorrow">Tomorrow</string>
+    <string name="task_undo_refused">Could not undo: the task is no longer as this app left it. Nothing was changed.</string>
+    <string name="task_pick_again">That day can no longer be chosen. Pick the day again.</string>
+    <string name="task_busy">Another change is still being saved. Pick the day again in a moment.</string>
     <plurals name="month_tile_tasks">
         <item quantity="one">%1$d task</item>
         <item quantity="other">%1$d tasks</item>

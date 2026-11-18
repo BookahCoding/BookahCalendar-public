@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
                             when {
                                 state.searchOpen -> SearchScreen(state, onBack = { model.openSearch(false) }, onOpenEvent = model::openEvent)
                                 state.settingsOpen -> SettingsScreen(state, onBack = { model.openSettings(false) }, onAddFeed = model::addFeed, onRemoveFeed = model::removeFeed, onSignOut = model::signOut, onTheme = model::setTheme, onAppearance = model::setAppearance, onPureBlack = model::setPureBlack, onWeekStart = model::setWeekStart, onSearchWeatherPlace = model::searchWeatherPlace, onChooseWeatherPlace = model::chooseWeatherPlace, onRemoveWeatherPlace = model::removeWeatherPlace, onCheckUpdates = model::checkUpdates)
-                                state.tasksOpen -> dev.bookah.calendar.ui.TasksScreen(state, onBack = { model.openTasks(false) }, onOpenTask = model::openTask, onTick = model::tickTask)
+                                state.tasksOpen -> dev.bookah.calendar.ui.TasksScreen(state, onBack = { model.openTasks(false) }, onOpenTask = model::openTask, onTick = model::tickTask, onMove = model::moveTask)
                                 openDay != null -> DayListScreen(openDay, state, onBack = { model.openDay(null) }, onOpenEvent = model::openEvent, onOpenTask = model::openTask, onTick = model::tickTask)
                                 state.view == ViewMode.Month -> MonthScreen(state, onMenu = { scope.launch { drawer.open() } }, onOpenDay = model::openDay)
                                 state.view == ViewMode.Day || state.view == ViewMode.ThreeDays || state.view == ViewMode.Week -> androidx.compose.runtime.key(state.view) {
@@ -119,11 +119,12 @@ class MainActivity : ComponentActivity() {
                             parentTitle = t.parentUid?.let { p -> state.allTasks.firstOrNull { it.uid == p }?.title },
                             onDismiss = { model.openTask(null) },
                             editability = state.taskEditability[t.key], saving = state.taskSaving == t.key, onMarkDone = { model.tickTask(t) },
+                            movability = state.taskMovability[t.key], onPickDay = { day -> model.moveTask(t, day) }, writing = state.taskSaving != null,
                         )
                     }
-                    // "Task done · Undo" (or what went wrong) above the "+" button, on every screen
+                    // "Task done · Undo", "Task moved to <day> · Undo" (or what went wrong) above the "+" button, on every screen
                     dev.bookah.calendar.ui.TaskBarHost(
-                        state.taskBar, undoSaving = state.taskSaving == UNDO_SAVING, onUndo = model::undoTaskDone, onDismiss = model::dismissTaskBar,
+                        state.taskBar, undoSaving = state.taskSaving == UNDO_SAVING, onUndo = model::undoTaskBar, onDismiss = model::dismissTaskBar,
                         modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter).safeDrawingPadding()
                             .padding(start = 16.dp, end = 16.dp, bottom = if (showFab) 88.dp else 16.dp),
                     )

@@ -166,9 +166,9 @@ private fun DayTile(
                 if (e.readOnly) Icon(Icons.Default.Lock, stringResource(R.string.lock_description), Modifier.size(9.dp), tint = chip.text)
             }
         }
-        // a task chip: the list's colour with the round task mark in front of the title
+        // a task chip: the list's pill colours with the task's tick symbol in front of the title (the same as on the Schedule)
         for (t in tasks.take((shownChips - events.size).coerceAtLeast(0))) {
-            val chip = ChipColor.forCalendar(taskListColor(colors[t.calendarId]))
+            val chip = taskChipColor(colors[t.calendarId])
             Row(
                 Modifier.fillMaxWidth().height(CHIP_HEIGHT).clip(RoundedCornerShape(4.dp)).background(chip.fill).padding(horizontal = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,

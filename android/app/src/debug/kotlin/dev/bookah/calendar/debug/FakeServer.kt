@@ -52,10 +52,14 @@ class FakeServer(private val calendars: List<RemoteCalendar>, seed: List<RemoteO
 
     override suspend fun get(objectHref: String) = objects[objectHref]
 
-    /** The STATUS, PERCENT-COMPLETE and COMPLETED lines of the generated item with this title, as the fake server holds it (for emulator checks). */
+    /**
+     * The STATUS, PERCENT-COMPLETE, COMPLETED, DTSTART, DUE and SEQUENCE lines of the generated item with this title, as the fake server holds
+     * it, with its ETag (for emulator checks of a tick or a move and their undo).
+     */
     fun tickLines(title: String): String {
         val hit = objects.values.firstOrNull { "SUMMARY:$title\r\n" in it.ics } ?: return "not found"
-        return hit.ics.split("\r\n").filter { it.startsWith("STATUS") || it.startsWith("PERCENT-COMPLETE") || it.startsWith("COMPLETED") }.joinToString(" | ").ifEmpty { "none" }
+        val names = listOf("STATUS", "PERCENT-COMPLETE", "COMPLETED", "DTSTART", "DUE", "SEQUENCE")
+        return "etag ${hit.etag}: " + hit.ics.split("\r\n").filter { l -> names.any { l.startsWith(it) } }.joinToString(" | ").ifEmpty { "none" }
     }
 
     /** Changes an event or a task "elsewhere": a new ETag and a marker in the title, so the app's next write to it is refused with 412. */
